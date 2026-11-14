@@ -610,18 +610,18 @@ export const AcousticSpeechStudio: React.FC = () => {
 
         {/* Target Phrase Typography */}
         <div className="text-center space-y-3">
-          <h1 className="text-[30px] sm:text-5xl font-black text-white tracking-tight leading-tight break-words">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight break-words">
             {currentItem.spanish}
           </h1>
 
           {/* Phonetic Syllable Stress Breakdown */}
           {showPhoneticBreakdown && (
-            <div className="inline-flex max-w-full items-center gap-2 bg-slate-950 px-3 sm:px-4 py-2 rounded-2xl border border-slate-800 font-mono text-[12px] sm:text-base text-amber-300 font-bold overflow-x-auto">
+            <div className="inline-flex max-w-full items-center gap-2 bg-slate-950 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border border-slate-800 font-mono text-xs sm:text-base text-amber-300 font-bold overflow-x-auto">
               <span>{currentItem.phonetic}</span>
             </div>
           )}
 
-          <p className="text-base sm:text-lg text-slate-300 font-medium">
+          <p className="text-sm sm:text-lg text-slate-300 font-medium">
             "{currentItem.english}"
           </p>
 
@@ -655,22 +655,22 @@ export const AcousticSpeechStudio: React.FC = () => {
         <div className="grid w-full grid-cols-2 items-center justify-center gap-2 sm:flex sm:w-auto sm:gap-3">
           <button
             onClick={() => playNativeAudio(stats.speechRate)}
-            className={`flex items-center justify-center gap-2 px-3 sm:px-5 py-3 rounded-2xl font-bold text-[11px] sm:text-sm transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
               isPlayingAudio
                 ? 'bg-cyan-500 text-slate-950 scale-105 shadow-lg shadow-cyan-500/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 shadow-md'
             }`}
           >
-            <Volume2 className="w-4 h-4 text-cyan-400" />
-            <span>Listen Native (1.0x)</span>
+            <Volume2 className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="truncate">Native (1.0x)</span>
           </button>
 
           <button
             onClick={() => playNativeAudio(0.72)}
-            className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-3 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-semibold text-[11px] sm:text-xs border border-slate-700 transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors cursor-pointer"
           >
-            <Turtle className="w-4 h-4 text-emerald-400" />
-            <span>Slow Syllables (0.75x)</span>
+            <Turtle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">Slow (0.75x)</span>
           </button>
         </div>
 
@@ -1063,13 +1063,14 @@ export const AcousticSpeechStudio: React.FC = () => {
         )}
 
         {/* Navigation Arrows */}
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2 sm:gap-3">
           <button
             onClick={handlePrev}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl sm:rounded-2xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Previous</span>
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -1077,17 +1078,19 @@ export const AcousticSpeechStudio: React.FC = () => {
               <button
                 onClick={handleSkipToReview}
                 title="Skip phrase for now and master it in the end-of-topic review queue"
-                className="px-3.5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 text-xs font-bold border border-slate-800 transition-colors cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-2.5 rounded-xl sm:rounded-2xl bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-200 text-xs font-bold border border-slate-800 transition-colors cursor-pointer"
               >
-                <span>Skip to Review</span>
+                <span className="hidden sm:inline">Skip to Review</span>
+                <span className="sm:hidden">Skip</span>
               </button>
             )}
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-xs font-bold text-slate-950 transition-colors shadow-lg shadow-cyan-500/20 cursor-pointer"
+              className="flex items-center gap-1 sm:gap-1.5 px-3.5 sm:px-5 py-2.5 rounded-xl sm:rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-xs font-bold text-slate-950 transition-colors shadow-lg shadow-cyan-500/20 cursor-pointer"
             >
-              <span>{isReviewQueueActive ? 'Next Review Phrase' : 'Next Phrase'}</span>
+              <span className="hidden sm:inline">{isReviewQueueActive ? 'Next Review Phrase' : 'Next Phrase'}</span>
+              <span className="sm:hidden">{isReviewQueueActive ? 'Next Review' : 'Next'}</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -1096,8 +1099,8 @@ export const AcousticSpeechStudio: React.FC = () => {
 
       {/* UNIT MASTERED CELEBRATION MODAL */}
       {showUnitMasteredCelebration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative max-w-lg w-full bg-[#0B0F17] border-2 border-cyan-500/50 rounded-3xl p-8 shadow-2xl text-center space-y-6 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative max-w-lg w-full max-h-[90dvh] overflow-y-auto bg-[#0B0F17] border-2 border-cyan-500/50 rounded-[28px] sm:rounded-3xl p-5 sm:p-8 shadow-2xl text-center space-y-5 sm:space-y-6">
             {/* Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
 

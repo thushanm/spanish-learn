@@ -163,14 +163,14 @@ export const LearningHome: React.FC = () => {
           {[
             ['A1', 'Start'],
             ['A2', 'Explore'],
-            ['B1', 'Tell stories'],
-            ['B2', 'Sound natural']
+            ['B1', 'Stories'],
+            ['B2', 'Fluency']
           ].map(([level, label], index) => {
             const unlocked = index <= journeyStage;
             return (
-              <div key={level} className={`rounded-2xl border p-2.5 sm:p-3 text-center ${unlocked ? 'border-cyan-400/30 bg-cyan-400/10' : 'border-slate-700/70 bg-slate-950/40 opacity-65'}`}>
+              <div key={level} className={`rounded-2xl border p-1.5 sm:p-3 text-center ${unlocked ? 'border-cyan-400/30 bg-cyan-400/10' : 'border-slate-700/70 bg-slate-950/40 opacity-65'}`}>
                 <p className={`text-sm font-black ${unlocked ? 'text-cyan-200' : 'text-slate-500'}`}>{level}</p>
-                <p className="mt-1 text-[9px] sm:text-[10px] font-bold leading-tight text-slate-400">{label}</p>
+                <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-[10px] font-bold leading-tight text-slate-400 truncate">{label}</p>
               </div>
             );
           })}

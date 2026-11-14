@@ -163,43 +163,59 @@ export const CortexNavbar: React.FC<CortexNavbarProps> = ({ onOpenSettings }) =>
           </div>
         </div>
 
-        {/* Thumb-friendly phone dock */}
-        <div className="fixed inset-x-0 bottom-0 z-50 flex md:hidden items-center justify-around gap-1 border-t border-cyan-400/15 bg-[#0B0F17]/95 px-2 pt-2 pb-[max(0.55rem,env(safe-area-inset-bottom))] text-[10px] font-bold shadow-[0_-12px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+        {/* Thumb-friendly phone dock with all 5 core modalities */}
+        <div className="fixed inset-x-0 bottom-0 z-50 flex md:hidden items-center justify-around gap-1 border-t border-cyan-400/15 bg-[#0B0F17]/95 px-1 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] text-[10px] font-bold shadow-[0_-12px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           <button
             onClick={() => handleTab('roadmap')}
-            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 min-h-[52px] ${
-              activeTab === 'roadmap' ? 'bg-cyan-500/20 text-cyan-400 font-extrabold' : 'text-slate-400'
+            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[50px] transition-all ${
+              activeTab === 'roadmap' ? 'bg-cyan-500/20 text-cyan-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Brain className="w-4 h-4" />
-            <span>Today</span>
+            <span className="truncate">Today</span>
           </button>
-          <button
-            onClick={() => handleTab('practice')}
-            className={`mobile-nav-item -mt-5 flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-2 min-h-[60px] border ${
-              activeTab === 'practice' ? 'border-cyan-300/60 bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/25' : 'border-cyan-500/25 bg-cyan-500/15 text-cyan-300'
-            }`}
-          >
-            <Mic className="w-5 h-5" />
-            <span>Speak</span>
-          </button>
+
           <button
             onClick={() => handleTab('builder')}
-            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 min-h-[52px] ${
-              activeTab === 'builder' ? 'bg-indigo-500/20 text-indigo-400 font-extrabold' : 'text-slate-400'
+            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[50px] transition-all ${
+              activeTab === 'builder' ? 'bg-indigo-500/20 text-indigo-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Puzzle className="w-4 h-4" />
-            <span>Build</span>
+            <span className="truncate">Build</span>
           </button>
+
+          {/* Central prominent Speak CTA button */}
+          <button
+            onClick={() => handleTab('practice')}
+            className={`mobile-nav-item -mt-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-2 min-h-[58px] border transition-all ${
+              activeTab === 'practice'
+                ? 'border-cyan-300/60 bg-gradient-to-tr from-cyan-400 to-teal-400 text-slate-950 shadow-lg shadow-cyan-400/30 font-black'
+                : 'border-cyan-500/30 bg-cyan-500/15 text-cyan-300 shadow-md shadow-cyan-500/15'
+            }`}
+          >
+            <Mic className="w-5 h-5" />
+            <span className="font-extrabold text-[10px]">Speak</span>
+          </button>
+
+          <button
+            onClick={() => handleTab('dictionary')}
+            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[50px] transition-all ${
+              activeTab === 'dictionary' ? 'bg-rose-500/20 text-rose-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span className="truncate">Words</span>
+          </button>
+
           <button
             onClick={() => handleTab('analytics')}
-            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 min-h-[52px] ${
-              activeTab === 'analytics' ? 'bg-cyan-500/20 text-cyan-400 font-extrabold' : 'text-slate-400'
+            className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[50px] transition-all ${
+              activeTab === 'analytics' ? 'bg-cyan-500/20 text-cyan-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>Progress</span>
+            <span className="truncate">Progress</span>
           </button>
         </div>
       </div>
