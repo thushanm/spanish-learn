@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { CortexNavbar } from './components/CortexNavbar';
+import { CortexNavbar, MobileBottomNav } from './components/CortexNavbar';
 import { LearningHome } from './components/LearningHome';
 import { AcousticSpeechStudio } from './components/AcousticSpeechStudio';
 import { SentenceBuilderExercise } from './components/SentenceBuilderExercise';
@@ -62,6 +62,9 @@ const AppContent: React.FC = () => {
           </p>
         </div>
       </footer>
+
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      <MobileBottomNav />
 
       {/* Settings Modal */}
       <SettingsModal
