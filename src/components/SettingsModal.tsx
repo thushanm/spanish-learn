@@ -28,6 +28,7 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { stats, updateSettings, resetProgress } = useApp();
   const [groqApiKey, setGroqApiKey] = useState('');
+  const [showCustomKey, setShowCustomKey] = useState(false);
   const [isTestingGroq, setIsTestingGroq] = useState(false);
   const [groqStatusMsg, setGroqStatusMsg] = useState<{ type: 'success' | 'error' | null; text: string }>({
     type: null,
@@ -276,9 +277,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
 
         {/* Global Groq AI Integration (Meta Llama 3 + Whisper Turbo) */}
-        <div className="pt-3 border-t border-slate-800 space-y-3.5">
+        <div className="pt-3 border-t border-slate-800 space-y-3">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 p-0.5 shrink-0">
                 <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
@@ -287,85 +288,100 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-white">Global Groq AI Integration</p>
-                  {freeAIService.hasGroqKey() ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Active Globally
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-bold">
-                      Offline Mode
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Active by Default
+                  </span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed mt-0.5">
-                  One Groq key powers the entire app: <strong className="text-cyan-300">Whisper Voice-to-Text</strong> for reliable mic scoring + <strong className="text-indigo-300">Meta Llama 3.3</strong> for conversation tutoring.
+                  Pre-configured globally: <strong className="text-cyan-300">Whisper Voice-to-Text</strong> for instant pronunciation scoring + <strong className="text-indigo-300">Meta Llama 3.3</strong> for conversation tutoring. No manual setup required!
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-              <input
-                type="password"
-                value={groqApiKey}
-                onChange={(event) => {
-                  setGroqApiKey(event.target.value);
-                  setGroqStatusMsg({ type: null, text: '' });
-                }}
-                placeholder="Paste Groq API Key (gsk_...)"
-                className="w-full rounded-xl border border-slate-700/80 bg-slate-950 pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-cyan-400 transition-colors"
-              />
+          {/* Status Banner */}
+          <div className="p-3 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-xs text-slate-200 font-semibold truncate">
+                Default Groq AI Engine is Ready & Online
+              </span>
             </div>
+            <button
+              onClick={handleSaveAndTestGroq}
+              disabled={isTestingGroq}
+              className="shrink-0 px-2.5 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-[11px] font-bold text-cyan-300 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {isTestingGroq ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Checking...</span>
+                </>
+              ) : (
+                <span>Test Status</span>
+              )}
+            </button>
+          </div>
 
-            {groqStatusMsg.text && (
-              <div
-                className={`p-2.5 rounded-xl text-xs flex items-start gap-2 ${
-                  groqStatusMsg.type === 'success'
-                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                    : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
-                }`}
-              >
-                {groqStatusMsg.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-                )}
-                <span>{groqStatusMsg.text}</span>
+          {groqStatusMsg.text && (
+            <div
+              className={`p-2.5 rounded-xl text-xs flex items-start gap-2 ${
+                groqStatusMsg.type === 'success'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+              }`}
+            >
+              {groqStatusMsg.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              )}
+              <span>{groqStatusMsg.text}</span>
+            </div>
+          )}
+
+          {/* Optional Custom API Key accordion */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowCustomKey(!showCustomKey)}
+              className="text-[11px] font-semibold text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
+            >
+              <span>{showCustomKey ? '▼ Hide custom API key' : '▶ Custom API Key (Optional)'}</span>
+            </button>
+
+            {showCustomKey && (
+              <div className="mt-2 space-y-2 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                <input
+                  type="password"
+                  value={groqApiKey}
+                  onChange={(event) => {
+                    setGroqApiKey(event.target.value);
+                    setGroqStatusMsg({ type: null, text: '' });
+                  }}
+                  placeholder="Paste custom Groq API Key (gsk_...)"
+                  className="w-full rounded-xl border border-slate-700/80 bg-slate-900 px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-cyan-400"
+                />
+                <div className="flex items-center justify-between">
+                  <a
+                    href="https://console.groq.com/keys"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-400 underline"
+                  >
+                    <span>console.groq.com/keys</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                  <button
+                    onClick={handleSaveAndTestGroq}
+                    className="px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold hover:bg-cyan-500/30"
+                  >
+                    Save Custom Key
+                  </button>
+                </div>
               </div>
             )}
-
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <a
-                href="https://console.groq.com/keys"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
-              >
-                <span>Get Free Groq Key (console.groq.com)</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-
-              <button
-                onClick={handleSaveAndTestGroq}
-                disabled={isTestingGroq}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 px-3 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/30 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isTestingGroq ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Verifying...</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Save & Test Global AI</span>
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         </div>
 

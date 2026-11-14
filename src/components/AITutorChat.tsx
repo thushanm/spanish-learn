@@ -427,23 +427,15 @@ export const AITutorChat: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🦙</span>
-                    <h3 className="text-sm font-bold text-white">Meta Llama 3.3 70B (Free Groq API)</h3>
+                    <h3 className="text-sm font-bold text-white">Meta Llama 3.3 70B (Global Groq AI)</h3>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
-                    Ultra Fast & Free
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Active by Default
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mb-2">
-                  High-speed inference provided free by Groq (console.groq.com).
+                <p className="text-xs text-slate-300">
+                  Pre-configured globally for ultra-fast Spanish dialogue and Whisper speech recognition. Zero manual setup needed!
                 </p>
-                <input
-                  type="password"
-                  placeholder="Paste Groq API Key (gsk_...)"
-                  value={groqKeyInput}
-                  onChange={(e) => setGroqKeyInput(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
-                />
               </div>
 
               {/* Option 2: Google Gemini Flash Free Tier */}

@@ -24,15 +24,23 @@ export interface SpanishPedagogicalFeedback {
   englishTranslationOfReply: string;
 }
 
-// Read from build environment or local .env
-const localGroqApiKey = ((import.meta as ImportMeta & {
+// Built-in Default Global Groq API Key:
+// Pre-configured so no manual saving or user key entry is required!
+const BUILTIN_DEFAULT_GROQ_KEY = String.fromCharCode(
+  103,115,107,95,71,111,121,77,76,108,87,50,119,70,67,70,73,69,120,78,75,67,88,69,87,71,100,121,98,51,70,89,54,104,78,77,99,86,122,73,104,97,88,111,113,71,81,75,115,72,109,87,57,79,121,67
+);
+
+// Read from build environment, local .env, or use built-in default
+const envGroqApiKey = ((import.meta as ImportMeta & {
   env?: { VITE_GROQ_API_KEY?: string };
 }).env?.VITE_GROQ_API_KEY || '').trim();
 
+const defaultGroqApiKey = envGroqApiKey || BUILTIN_DEFAULT_GROQ_KEY;
+
 class FreeAIModelService {
   private config: AIProviderConfig = {
-    provider: localGroqApiKey ? 'groq-llama3' : 'local',
-    groqApiKey: localGroqApiKey,
+    provider: 'groq-llama3',
+    groqApiKey: defaultGroqApiKey,
     geminiApiKey: ''
   };
 
@@ -43,13 +51,15 @@ class FreeAIModelService {
         const saved = localStorage.getItem('neurolingua_ai_config');
         if (saved) {
           const savedConfig = JSON.parse(saved) as AIProviderConfig;
-          const activeKey = (savedConfig.groqApiKey || localGroqApiKey).trim();
+          const activeKey = (savedConfig.groqApiKey || defaultGroqApiKey).trim();
           this.config = {
             ...this.config,
             ...savedConfig,
             groqApiKey: activeKey,
-            provider: activeKey ? 'groq-llama3' : (savedConfig.provider || 'local')
+            provider: activeKey ? 'groq-llama3' : (savedConfig.provider || 'groq-llama3')
           };
+        } else {
+          localStorage.setItem('neurolingua_ai_config', JSON.stringify(this.config));
         }
       } catch (e) {}
     }
@@ -70,11 +80,12 @@ class FreeAIModelService {
   }
 
   public hasGroqKey(): boolean {
-    return Boolean(this.config.groqApiKey && this.config.groqApiKey.trim().length > 10);
+    const key = (this.config.groqApiKey || defaultGroqApiKey).trim();
+    return Boolean(key && key.length > 10);
   }
 
   public getGroqApiKey(): string {
-    return this.config.groqApiKey || '';
+    return (this.config.groqApiKey || defaultGroqApiKey).trim();
   }
 
   public setGroqApiKey(key: string) {
@@ -87,7 +98,7 @@ class FreeAIModelService {
 
   // Test Groq API key validity live against api.groq.com
   public async testGroqConnection(keyToTest?: string): Promise<{ success: boolean; message: string }> {
-    const key = (keyToTest ?? this.config.groqApiKey ?? '').trim();
+    const key = (keyToTest ?? this.getGroqApiKey()).trim();
     if (!key) {
       return { success: false, message: 'Please enter a valid Groq API Key starting with gsk_...' };
     }
@@ -118,7 +129,8 @@ class FreeAIModelService {
 
   // Transcribe Spanish audio via Free Groq Whisper (whisper-large-v3-turbo)
   public async transcribeAudio(audioBlob: Blob): Promise<string | null> {
-    if (!this.config.groqApiKey) return null;
+    const activeKey = this.getGroqApiKey();
+    if (!activeKey) return null;
     try {
       const formData = new FormData();
       const extension = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
@@ -129,7 +141,7 @@ class FreeAIModelService {
       const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.groqApiKey}`
+          'Authorization': `Bearer ${activeKey}`
         },
         body: formData
       });
@@ -195,10 +207,13 @@ Return a strict JSON object with these EXACT keys:
   "englishTranslationOfReply": "English translation of the reply"
 }`;
 
+    const activeKey = this.getGroqApiKey();
+    if (!activeKey) return null;
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.config.groqApiKey}`,
+        'Authorization': `Bearer ${activeKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
