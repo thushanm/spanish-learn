@@ -38,6 +38,13 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const ROYAL_PRAISE_LINES = [
+  { title: '¡Corona de Oro! 👑', desc: '¡Pronunciación digna de la realeza española!', emoji: '👸' },
+  { title: '¡Magnífico y Sublime! ✨', desc: 'Tu acento y entonación brillan como una joya.', emoji: '💎' },
+  { title: '¡Pura Gracia Real! 🌹', desc: 'Dominas la cadencia nativa con elegancia total.', emoji: '🌟' },
+  { title: '¡Triunfo Majestuoso! 🏆', desc: 'Tu cerebro acaba de forjar una sinapsis de oro puro.', emoji: '👑' }
+];
+
 export const AcousticSpeechStudio: React.FC = () => {
   const {
     stats,
@@ -88,6 +95,7 @@ export const AcousticSpeechStudio: React.FC = () => {
   const [autoAdvanceSeconds, setAutoAdvanceSeconds] = useState<number | null>(null);
   const [showDopamineCelebration, setShowDopamineCelebration] = useState(false);
   const [celebrationXP, setCelebrationXP] = useState(25);
+  const [royalPraise, setRoyalPraise] = useState(ROYAL_PRAISE_LINES[0]);
 
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
@@ -110,17 +118,20 @@ export const AcousticSpeechStudio: React.FC = () => {
     playCorrectSound(stats.soundEnabled);
     const bonus = score >= 90 ? 35 : 25;
     setCelebrationXP(bonus);
+    setRoyalPraise(ROYAL_PRAISE_LINES[Math.floor(Math.random() * ROYAL_PRAISE_LINES.length)]);
     setShowDopamineCelebration(true);
 
-    // Double confetti cannons
+    // Double confetti cannons with royal colors
     confetti({
-      particleCount: 50,
-      spread: 60,
+      particleCount: 65,
+      spread: 65,
+      colors: ['#F59E0B', '#EC4899', '#38BDF8', '#10B981'],
       origin: { x: 0.25, y: 0.65 }
     });
     confetti({
-      particleCount: 50,
-      spread: 60,
+      particleCount: 65,
+      spread: 65,
+      colors: ['#F59E0B', '#EC4899', '#38BDF8', '#10B981'],
       origin: { x: 0.75, y: 0.65 }
     });
 
@@ -930,43 +941,48 @@ export const AcousticSpeechStudio: React.FC = () => {
           </div>
         )}
 
-        {/* DOPAMINE BURST CELEBRATION OVERLAY */}
+        {/* ROYAL PRINCESS DOPAMINE CELEBRATION OVERLAY */}
         {showDopamineCelebration && (
-          <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-cyan-950/70 border-2 border-emerald-400/50 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-emerald-400 p-0.5 shadow-xl shadow-emerald-500/20 animate-bounce">
-                <div className="w-full h-full bg-[#0B0F17] rounded-[14px] flex flex-col items-center justify-center">
-                  <Flame className="w-6 h-6 fill-amber-400 text-amber-400" />
-                  <span className="text-[10px] font-black text-amber-400 font-mono">+{celebrationXP}</span>
+          <div className="animate-princess-pop p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-rose-950/60 border-2 border-amber-400/50 shadow-2xl animate-royal-glow flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 text-center sm:text-left">
+              <div className="relative shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-400 to-yellow-300 p-0.5 shadow-xl shadow-amber-500/25 animate-float-gently">
+                  <div className="w-full h-full bg-[#0B0F17] rounded-[14px] flex flex-col items-center justify-center text-3xl">
+                    {royalPraise.emoji}
+                  </div>
+                </div>
+                <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-xs shadow-md border-2 border-[#0B0F17] animate-bounce">
+                  👑
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-white">¡Sensacional! Synapse Consolidated</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                    +{celebrationXP} XP
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <h3 className="text-base sm:text-lg font-black text-white">{royalPraise.title}</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    +{celebrationXP} XP Oro Real
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  Your neural pronunciation pathway has been reinforced!
+                <p className="text-xs text-amber-200/90 font-medium mt-0.5">
+                  {royalPraise.desc}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
               {stats.autoAdvance && autoAdvanceSeconds !== null && (
-                <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 px-3 py-1.5 rounded-xl bg-cyan-950 border border-cyan-500/30 font-mono">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-                  <span>Next in {autoAdvanceSeconds}s</span>
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-950/60 border border-amber-500/40 font-mono">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-sparkle-spin" />
+                  <span>Siguiente {autoAdvanceSeconds}s</span>
                 </div>
               )}
               <button
                 onClick={handleNext}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/25 flex items-center gap-2 transition-all transform hover:scale-105 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-rose-400 to-amber-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-all transform hover:scale-105 cursor-pointer"
               >
-                <span>Continue</span>
-                <ChevronRight className="w-4 h-4" />
+                <span>¡Continuar!</span>
+                <ChevronRight className="w-4 h-4 stroke-[3]" />
               </button>
             </div>
           </div>

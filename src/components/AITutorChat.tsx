@@ -49,9 +49,9 @@ export const AITutorChat: React.FC = () => {
     {
       id: 'init-1',
       sender: 'tutor',
-      spanish: '¡Hola! Soy tu compañero cognitivo de español con IA. ¿De qué te gustaría hablar hoy?',
-      english: 'Hello! I am your AI Spanish cognitive partner. What would you like to speak about today?',
-      phonetic: 'OH-lah! soy too kohm-pah-NYEH-roh kohg-nee-TEE-voh...',
+      spanish: '¡Hola! Soy la Princesa Sofía, tu compañera de conversación en español 👸👑 ¿De qué te gustaría hablar hoy? ¡Pregúntame o háblame en español!',
+      english: 'Hello! I am Princess Sofía, your Spanish conversation partner. What would you like to speak about today? Ask me anything or speak to me in Spanish!',
+      phonetic: 'OH-lah! soy lah preen-SEH-sah soh-FEE-ah...',
       timestamp: 'Now'
     }
   ]);
@@ -258,11 +258,13 @@ export const AITutorChat: React.FC = () => {
           return (
             <div
               key={msg.id}
-              className={`flex gap-3 items-start ${isTutor ? 'justify-start' : 'justify-end'}`}
+              className={`flex gap-2.5 sm:gap-3 items-start ${isTutor ? 'justify-start' : 'justify-end'}`}
             >
               {isTutor && (
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0">
-                  <Brain className="w-5 h-5 text-cyan-400" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-400 to-amber-300 p-[2px] shrink-0 shadow-md animate-float-gently">
+                  <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-lg sm:text-xl">
+                    👸
+                  </div>
                 </div>
               )}
 

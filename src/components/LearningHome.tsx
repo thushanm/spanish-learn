@@ -18,6 +18,7 @@ import {
   Zap
 } from 'lucide-react';
 import { getDailyQuest, getPlayerLevel } from '../utils/progression';
+import { PrincessCompanion } from './PrincessCompanion';
 
 const OUTCOMES: Record<string, string> = {
   'unit-1': 'Greet someone, introduce yourself, and be polite.',
@@ -150,6 +151,9 @@ export const LearningHome: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Royal Princess Companion & Motivational Cheering Guide */}
+      <PrincessCompanion />
 
       <section className="game-journey rounded-[28px] border border-indigo-400/20 bg-gradient-to-r from-indigo-950/35 via-slate-900 to-fuchsia-950/30 p-4 sm:p-5 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-3">

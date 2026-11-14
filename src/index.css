@@ -130,6 +130,71 @@
   animation: builderFeedbackPop 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Princess Royal & Dopamine Smooth Animations */
+@keyframes floatGently {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes royalGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.25), 0 0 32px rgba(236, 72, 153, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.5), 0 0 48px rgba(236, 72, 153, 0.35);
+  }
+}
+
+@keyframes sparkleSpin {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+    opacity: 0.75;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(0.9);
+    opacity: 0.75;
+  }
+}
+
+@keyframes princessPop {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.035);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-float-gently {
+  animation: floatGently 3.4s ease-in-out infinite;
+}
+
+.animate-royal-glow {
+  animation: royalGlow 3s ease-in-out infinite;
+}
+
+.animate-sparkle-spin {
+  animation: sparkleSpin 4s linear infinite;
+}
+
+.animate-princess-pop {
+  animation: princessPop 440ms cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
 @media (max-width: 767px) {
   input, select, textarea {
     font-size: 16px;

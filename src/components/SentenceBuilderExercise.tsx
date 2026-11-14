@@ -41,10 +41,11 @@ interface BuildChallenge {
 }
 
 const PRAISE_LINES = [
-  'Awesome! You are doing great!',
-  'Nice! Your Spanish is getting stronger!',
-  'Good job! Keep that brilliant streak going!',
-  'Super star! Three in a row!'
+  '👸 ¡Corona de Oro! 👑 ¡Eres la realeza del español!',
+  '✨ ¡Magnífico! 🌟 ¡Tu gramática brilla como una joya real!',
+  '💖 ¡Increíble! 🌹 ¡Hablas con una gracia y poder total!',
+  '💎 ¡Sublime! 🚀 ¡3 aciertos seguidos con pura fluidez!',
+  '🥳 ¡Sensacional! 🎉 ¡Tu mente crea sinapsis de oro puro!'
 ];
 
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5);
@@ -290,9 +291,9 @@ export const SentenceBuilderExercise: React.FC = () => {
       </div>
 
       {praise && (
-        <div className="builder-praise-burst mb-4 flex items-center gap-3 rounded-3xl border border-amber-300/45 bg-gradient-to-r from-amber-400 to-orange-400 p-3.5 text-slate-950 shadow-xl shadow-amber-500/20 sm:p-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/45"><Sparkles className="h-6 w-6 fill-current" /></div>
-          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-70">3 correct in a row</p><p className="text-base font-black leading-tight">{praise}</p></div>
+        <div className="builder-praise-burst mb-4 flex items-center gap-3 rounded-3xl border border-amber-300/45 bg-gradient-to-r from-amber-400 via-rose-400 to-amber-300 p-3.5 text-slate-950 shadow-xl shadow-amber-500/25 sm:p-4 animate-royal-glow">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/45 text-2xl shadow-inner">👸</div>
+          <div><p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">👑 Elogio Real de la Princesa</p><p className="text-sm sm:text-base font-black leading-tight">{praise}</p></div>
         </div>
       )}
 
