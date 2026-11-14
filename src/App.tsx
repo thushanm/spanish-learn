@@ -20,7 +20,7 @@ const AppContent: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
-    <div className="min-h-[100dvh] bg-[#070A0F] text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[#070A0F] text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-x-clip">
       {/* Cognitive Immersion Navigation */}
       <CortexNavbar onOpenSettings={() => setIsSettingsOpen(true)} />
 

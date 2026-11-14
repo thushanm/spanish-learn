@@ -4,6 +4,7 @@ import { DIALOGUE_SCENARIOS } from '../data/dialogues';
 import { DialogueScenario, DialogueLine } from '../types';
 import { speakSpanish, stopSpeaking, evaluateSpanishPronunciation } from '../utils/speech';
 import { speechService, SpeechResultPayload } from '../utils/speechRecognitionService';
+import { freeAIService } from '../utils/freeAIProvider';
 import {
   playClickSound,
   playCorrectSound,
@@ -47,10 +48,19 @@ export const DialogueRoleplay: React.FC = () => {
 
   // Hook SpeechRecognitionService
   useEffect(() => {
-    speechService.onTranscriptChange = (payload: SpeechResultPayload) => {
+    speechService.onTranscriptChange = async (payload: SpeechResultPayload) => {
       setInterimTranscript(payload.transcript);
       if (payload.isFinal && currentLine && currentLine.speaker === 'user') {
-        handleUserSpokenLine(payload.transcript);
+        let text = payload.transcript?.trim() || '';
+        if (!text && payload.audioBlob && freeAIService.hasGroqKey()) {
+          try {
+            const aiTrans = await freeAIService.transcribeAudio(payload.audioBlob);
+            if (aiTrans) text = aiTrans.trim();
+          } catch (e) {}
+        }
+        if (text) {
+          handleUserSpokenLine(text);
+        }
       }
     };
 

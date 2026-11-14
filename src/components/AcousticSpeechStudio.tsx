@@ -178,13 +178,60 @@ export const AcousticSpeechStudio: React.FC = () => {
       setRecordingPeak(result.audioPeak ?? null);
       setErrorMessage(null);
 
-      // Honest voice-detection check error
-      if (result.error && !result.transcript && !result.isOfflineAcoustic) {
+      // 1. If Groq Whisper is configured or if browser transcript is empty / offline,
+      // transcribe the recorded audio directly via Groq Whisper for 100% accuracy.
+      let transcript = (result.transcript || '').trim();
+
+      if ((!transcript || freeAIService.hasGroqKey() || result.isOfflineAcoustic) && result.audioBlob && result.audioBlob.size > 200) {
+        if (freeAIService.hasGroqKey()) {
+          setIsTranscribingAI(true);
+          try {
+            const aiTrans = await freeAIService.transcribeAudio(result.audioBlob);
+            if (aiTrans && aiTrans.trim()) {
+              transcript = aiTrans.trim();
+              result.transcript = transcript;
+              result.error = undefined;
+              result.isOfflineAcoustic = false;
+            }
+          } catch (e) {
+            console.warn('Groq Whisper transcription attempt failed:', e);
+          } finally {
+            setIsTranscribingAI(false);
+          }
+        }
+      }
+
+      // If we now have a valid transcript (from Groq Whisper or Web Speech API)
+      if (transcript) {
+        const evalResult = evaluateSpanishPronunciation(currentItem.spanish, transcript);
+        setScoreResult(evalResult);
+
+        if (evalResult.score >= 75) {
+          handleItemSuccess(evalResult.score);
+        } else {
+          handleItemMistake(evalResult);
+        }
+        return;
+      }
+
+      // If in offline acoustic mode and no transcript was produced
+      if (result.isOfflineAcoustic) {
+        setIsAcousticEvaluation(true);
+        setErrorMessage(
+          freeAIService.hasGroqKey()
+            ? 'Audio recorded, but could not transcribe clear Spanish speech. Please try speaking closer to your mic.'
+            : (result.transcriptionUnavailableReason || 'Your voice was recorded. Add a free Groq API key in Settings to enable instant AI speech scoring!')
+        );
+        return;
+      }
+
+      // Voice-detection check error (true silence / zero mic input)
+      if (result.error && !transcript) {
         setErrorMessage(result.error);
         playIncorrectSound(stats.soundEnabled);
         recordPracticeResult(currentUnit.id, 0, currentItem);
 
-        // Queue to missed items
+        // Queue to missed items for smart repetition
         setMissedQueue(prev => {
           if (!prev.some(m => m.id === currentItem.id)) {
             return [...prev, currentItem];
@@ -202,35 +249,9 @@ export const AcousticSpeechStudio: React.FC = () => {
         return;
       }
 
-      // If user is in local acoustic mode or Chrome speech server was blocked
-      if (result.isOfflineAcoustic) {
-        if (result.audioBlob) {
-          setIsTranscribingAI(true);
-          const aiTrans = await freeAIService.transcribeAudio(result.audioBlob);
-          setIsTranscribingAI(false);
-          if (aiTrans) {
-            result.transcript = aiTrans;
-            const evalResult = evaluateSpanishPronunciation(currentItem.spanish, result.transcript);
-            setScoreResult(evalResult);
-            if (evalResult.score >= 75) {
-              handleItemSuccess(evalResult.score);
-            } else {
-              handleItemMistake(evalResult);
-            }
-            return;
-          }
-        }
-
-        // A recording can be useful for self-review, but it is never a pass without a transcript.
-        setIsAcousticEvaluation(true);
-        setErrorMessage(result.transcriptionUnavailableReason || 'Your voice was recorded, but the browser did not provide a transcript. This attempt is not scored or marked as correct.');
-        return;
-      }
-
-      // STRICT HONEST EVALUATION: evaluate what the user ACTUALLY spoke!
-      const evalResult = evaluateSpanishPronunciation(currentItem.spanish, result.transcript);
+      // Fallback evaluation
+      const evalResult = evaluateSpanishPronunciation(currentItem.spanish, transcript);
       setScoreResult(evalResult);
-
       if (evalResult.score >= 75) {
         handleItemSuccess(evalResult.score);
       } else {

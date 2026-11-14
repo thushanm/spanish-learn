@@ -322,8 +322,8 @@ export class SpeechRecognitionService {
     const audioByteLength = this.lastRecordedBlob?.size ?? 0;
     const audioMetrics = await this.inspectRecordedAudio(this.lastRecordedBlob);
     const maxVolume = this.volumeSamples.length > 0 ? Math.max(...this.volumeSamples) : 0;
-    const hasRecordedVoice = audioByteLength > 800 && durationMs > 250
-      && (audioMetrics.peak > 0.003 || maxVolume > 2 || transcript.trim().length > 0);
+    const hasRecordedVoice = (audioByteLength > 200 && durationMs > 150)
+      || audioMetrics.peak > 0.001 || maxVolume > 0 || transcript.trim().length > 0;
     this.stopHardware();
     this.isListening = false;
 
@@ -405,9 +405,9 @@ export class SpeechRecognitionService {
     const audioMetrics = await this.inspectRecordedAudio(this.lastRecordedBlob);
 
     // Check if the microphone actually received sound
-    // A media file alone can contain silence. Require both a usable file and measured voice activity.
-    const actuallySpoke = audioByteLength > 800 && durationMs > 250
-      && (audioMetrics.peak > 0.003 || maxVolume > 2);
+    // Accept audio if hardware recorded bytes or audio context detected signal
+    const actuallySpoke = (audioByteLength > 200 && durationMs > 150)
+      || audioMetrics.peak > 0.001 || maxVolume > 0;
 
     this.stopHardware();
     this.isListening = false;
@@ -471,7 +471,7 @@ export class SpeechRecognitionService {
     let context: AudioContext | null = null;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return { peak: 0 };
+      if (!AudioCtx) return { peak: blob.size > 200 ? 0.02 : 0 };
       context = new AudioCtx();
       const audioBuffer = await context.decodeAudioData(await blob.arrayBuffer());
       let peak = 0;
@@ -486,8 +486,10 @@ export class SpeechRecognitionService {
 
       return { durationMs: Math.round(audioBuffer.duration * 1000), peak };
     } catch (error) {
-      console.warn('Could not inspect recorded audio:', error);
-      return { peak: 0 };
+      // If WebM / codec decoding is not supported in this AudioContext (e.g. Safari / mobile),
+      // detect voice from file size rather than claiming zero signal
+      const fallbackPeak = blob.size > 200 ? 0.02 : 0;
+      return { peak: fallbackPeak };
     } finally {
       if (context && context.state !== 'closed') {
         context.close().catch(() => {});

@@ -1,9 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSpanishVoiceStatus, speakSpanish } from '../utils/speech';
-import { playClickSound } from '../utils/soundEffects';
+import { playClickSound, playCorrectSound } from '../utils/soundEffects';
 import { freeAIService } from '../utils/freeAIProvider';
-import { X, Volume2, Globe, Sliders, RotateCcw, Check, KeyRound } from 'lucide-react';
+import {
+  X,
+  Volume2,
+  Globe,
+  Sliders,
+  RotateCcw,
+  Check,
+  KeyRound,
+  Sparkles,
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Mic,
+  Brain
+} from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,14 +28,18 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { stats, updateSettings, resetProgress } = useApp();
   const [groqApiKey, setGroqApiKey] = useState('');
-  const [voiceKeySaved, setVoiceKeySaved] = useState(false);
+  const [isTestingGroq, setIsTestingGroq] = useState(false);
+  const [groqStatusMsg, setGroqStatusMsg] = useState<{ type: 'success' | 'error' | null; text: string }>({
+    type: null,
+    text: ''
+  });
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const [spanishVoice, setSpanishVoice] = useState({ available: false, label: 'Checking Spanish voice…' });
 
   useEffect(() => {
     if (isOpen) {
-      setGroqApiKey(freeAIService.getConfig().groqApiKey || '');
-      setVoiceKeySaved(false);
+      setGroqApiKey(freeAIService.getGroqApiKey());
+      setGroqStatusMsg({ type: null, text: '' });
       if (navigator.mediaDevices?.enumerateDevices) {
         navigator.mediaDevices.enumerateDevices()
           .then(devices => setMicrophones(devices.filter(device => device.kind === 'audioinput')))
@@ -73,9 +92,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
-  const saveVoiceTranscriptionKey = () => {
-    freeAIService.setConfig({ groqApiKey: groqApiKey.trim() });
-    setVoiceKeySaved(true);
+  const handleSaveAndTestGroq = async () => {
+    const trimmed = groqApiKey.trim();
+    freeAIService.setGroqApiKey(trimmed);
+    if (!trimmed) {
+      setGroqStatusMsg({ type: 'success', text: 'Switched to built-in local offline engine.' });
+      return;
+    }
+
+    setIsTestingGroq(true);
+    setGroqStatusMsg({ type: null, text: '' });
+    const result = await freeAIService.testGroqConnection(trimmed);
+    setIsTestingGroq(false);
+
+    if (result.success) {
+      playCorrectSound(stats.soundEnabled);
+      setGroqStatusMsg({
+        type: 'success',
+        text: 'Connected to Groq! Meta Llama 3 & Whisper Turbo speech recognition are active globally.'
+      });
+    } else {
+      setGroqStatusMsg({
+        type: 'error',
+        text: result.message
+      });
+    }
   };
 
   return (
@@ -234,37 +275,97 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </button>
         </div>
 
-        {/* Voice transcription fallback */}
-        <div className="pt-2 border-t border-slate-800 space-y-3">
-          <div className="flex items-start gap-2">
-            <KeyRound className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-white">Voice-to-text fallback (optional)</p>
-              <p className="text-xs text-slate-400 leading-relaxed mt-0.5">
-                If browser speech recognition is blocked, a Groq Whisper key can transcribe your saved Spanish recording for scoring.
-              </p>
+        {/* Global Groq AI Integration (Meta Llama 3 + Whisper Turbo) */}
+        <div className="pt-3 border-t border-slate-800 space-y-3.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 p-0.5 shrink-0">
+                <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-white">Global Groq AI Integration</p>
+                  {freeAIService.hasGroqKey() ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Active Globally
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-bold">
+                      Offline Mode
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed mt-0.5">
+                  One Groq key powers the entire app: <strong className="text-cyan-300">Whisper Voice-to-Text</strong> for reliable mic scoring + <strong className="text-indigo-300">Meta Llama 3.3</strong> for conversation tutoring.
+                </p>
+              </div>
             </div>
           </div>
-          <input
-            type="password"
-            value={groqApiKey}
-            onChange={(event) => {
-              setGroqApiKey(event.target.value);
-              setVoiceKeySaved(false);
-            }}
-            placeholder="Groq API key (gsk_...)"
-            className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-cyan-500"
-          />
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] leading-relaxed text-slate-500">
-              Your key stays in this browser. When used, the audio recording is sent to Groq only for transcription.
-            </p>
-            <button
-              onClick={saveVoiceTranscriptionKey}
-              className="shrink-0 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-300 hover:bg-cyan-500/20"
-            >
-              {voiceKeySaved ? 'Saved' : 'Save key'}
-            </button>
+
+          <div className="space-y-2">
+            <div className="relative">
+              <KeyRound className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+              <input
+                type="password"
+                value={groqApiKey}
+                onChange={(event) => {
+                  setGroqApiKey(event.target.value);
+                  setGroqStatusMsg({ type: null, text: '' });
+                }}
+                placeholder="Paste Groq API Key (gsk_...)"
+                className="w-full rounded-xl border border-slate-700/80 bg-slate-950 pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-cyan-400 transition-colors"
+              />
+            </div>
+
+            {groqStatusMsg.text && (
+              <div
+                className={`p-2.5 rounded-xl text-xs flex items-start gap-2 ${
+                  groqStatusMsg.type === 'success'
+                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                }`}
+              >
+                {groqStatusMsg.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                )}
+                <span>{groqStatusMsg.text}</span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <a
+                href="https://console.groq.com/keys"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+              >
+                <span>Get Free Groq Key (console.groq.com)</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+
+              <button
+                onClick={handleSaveAndTestGroq}
+                disabled={isTestingGroq}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 px-3 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/30 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isTestingGroq ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save & Test Global AI</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

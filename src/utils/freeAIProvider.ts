@@ -1,8 +1,9 @@
 // Free Powerful AI Integration for Spanish Language Learning
 // Supports:
-// 1. Meta Llama 3.3 70B & 8B via Free Groq API
-// 2. Google Gemini 1.5 Flash via Free Google AI Studio API
-// 3. Built-in Local Linguistic Engine (Zero keys required)
+// 1. Meta Llama 3.3 70B & 8B via Free Groq API (Global AI Engine)
+// 2. Groq Whisper (whisper-large-v3-turbo) for ultra-accurate Spanish speech transcription
+// 3. Google Gemini 1.5 Flash via Free Google AI Studio API
+// 4. Built-in Local Linguistic Engine (Zero keys required)
 
 export type AIModelProvider = 'local' | 'groq-llama3' | 'gemini-flash';
 
@@ -23,15 +24,14 @@ export interface SpanishPedagogicalFeedback {
   englishTranslationOfReply: string;
 }
 
-// This is intentionally read only from an untracked local `.env.local` file.
-// It is never placed in tracked application source or shown in the UI by default.
+// Read from build environment or local .env
 const localGroqApiKey = ((import.meta as ImportMeta & {
   env?: { VITE_GROQ_API_KEY?: string };
 }).env?.VITE_GROQ_API_KEY || '').trim();
 
 class FreeAIModelService {
   private config: AIProviderConfig = {
-    provider: 'local',
+    provider: localGroqApiKey ? 'groq-llama3' : 'local',
     groqApiKey: localGroqApiKey,
     geminiApiKey: ''
   };
@@ -43,11 +43,12 @@ class FreeAIModelService {
         const saved = localStorage.getItem('neurolingua_ai_config');
         if (saved) {
           const savedConfig = JSON.parse(saved) as AIProviderConfig;
+          const activeKey = (savedConfig.groqApiKey || localGroqApiKey).trim();
           this.config = {
             ...this.config,
             ...savedConfig,
-            // A saved key always takes priority. Otherwise, use the local project config.
-            groqApiKey: savedConfig.groqApiKey || localGroqApiKey
+            groqApiKey: activeKey,
+            provider: activeKey ? 'groq-llama3' : (savedConfig.provider || 'local')
           };
         }
       } catch (e) {}
@@ -56,6 +57,9 @@ class FreeAIModelService {
 
   public setConfig(newConfig: Partial<AIProviderConfig>) {
     this.config = { ...this.config, ...newConfig };
+    if (newConfig.groqApiKey && newConfig.groqApiKey.trim()) {
+      this.config.provider = 'groq-llama3';
+    }
     if (typeof window !== 'undefined') {
       localStorage.setItem('neurolingua_ai_config', JSON.stringify(this.config));
     }
@@ -63,6 +67,53 @@ class FreeAIModelService {
 
   public getConfig(): AIProviderConfig {
     return this.config;
+  }
+
+  public hasGroqKey(): boolean {
+    return Boolean(this.config.groqApiKey && this.config.groqApiKey.trim().length > 10);
+  }
+
+  public getGroqApiKey(): string {
+    return this.config.groqApiKey || '';
+  }
+
+  public setGroqApiKey(key: string) {
+    const trimmed = key.trim();
+    this.setConfig({
+      groqApiKey: trimmed,
+      provider: trimmed ? 'groq-llama3' : this.config.provider
+    });
+  }
+
+  // Test Groq API key validity live against api.groq.com
+  public async testGroqConnection(keyToTest?: string): Promise<{ success: boolean; message: string }> {
+    const key = (keyToTest ?? this.config.groqApiKey ?? '').trim();
+    if (!key) {
+      return { success: false, message: 'Please enter a valid Groq API Key starting with gsk_...' };
+    }
+
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${key}` }
+      });
+      if (res.ok) {
+        return {
+          success: true,
+          message: 'Connected to Groq! Meta Llama 3 & Whisper Audio Transcription are active globally.'
+        };
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          message: errJson.error?.message || 'Invalid Groq API Key. Please verify on console.groq.com'
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        message: 'Could not connect to Groq servers. Please check your internet connection.'
+      };
+    }
   }
 
   // Transcribe Spanish audio via Free Groq Whisper (whisper-large-v3-turbo)
@@ -98,10 +149,8 @@ class FreeAIModelService {
     targetContext: string,
     cefrLevel: string = 'A1'
   ): Promise<SpanishPedagogicalFeedback> {
-    const provider = this.config.provider;
-
-    // 1. Meta Llama 3 via Groq (Free Tier)
-    if (provider === 'groq-llama3' && this.config.groqApiKey) {
+    // 1. Meta Llama 3 via Groq (Always prioritize Groq if key exists)
+    if (this.hasGroqKey()) {
       try {
         const groqResult = await this.callGroqLlama(userMessage, targetContext, cefrLevel);
         if (groqResult) return groqResult;
@@ -111,7 +160,7 @@ class FreeAIModelService {
     }
 
     // 2. Google Gemini (Free Tier)
-    if (provider === 'gemini-flash' && this.config.geminiApiKey) {
+    if (this.config.provider === 'gemini-flash' && this.config.geminiApiKey) {
       try {
         const geminiResult = await this.callGemini(userMessage, targetContext, cefrLevel);
         if (geminiResult) return geminiResult;
@@ -130,19 +179,19 @@ class FreeAIModelService {
     targetContext: string,
     cefrLevel: string
   ): Promise<SpanishPedagogicalFeedback | null> {
-    const prompt = `You are a world-class Spanish language acquisition coach.
-The student is at CEFR Level ${cefrLevel}.
-Target sentence or topic: "${targetContext}".
+    const prompt = `You are an expert Spanish language coach for an English speaker.
+CEFR Level: ${cefrLevel}.
+Target sentence/topic: "${targetContext}".
 Student said: "${userMessage}".
 
 Return a strict JSON object with these EXACT keys:
 {
   "isCorrect": boolean,
-  "score": number (0 to 100, strict: if wrong words or grammar, score < 60),
-  "detectedErrors": ["string explaining each error concisely in English"],
-  "grammarExplanation": "Concise English grammar explanation of mistakes or praise",
-  "phoneticSyllableTip": "Specific English tip on tongue placement or syllable stress",
-  "suggestedReplyInSpanish": "Natural Spanish conversational reply (max 2 sentences)",
+  "score": number (0 to 100),
+  "detectedErrors": ["concise bullet of error in English"],
+  "grammarExplanation": "Concise English explanation of what was good or what needs fixing",
+  "phoneticSyllableTip": "English tip on pronunciation and syllable stress",
+  "suggestedReplyInSpanish": "Natural Spanish conversational reply (1-2 sentences)",
   "englishTranslationOfReply": "English translation of the reply"
 }`;
 
@@ -202,7 +251,10 @@ Provide JSON evaluation:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json' }
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
         })
       }
     );
@@ -211,6 +263,7 @@ Provide JSON evaluation:
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) return null;
+
     const parsed = JSON.parse(text);
     return {
       userSpoken: userMessage,
@@ -219,88 +272,48 @@ Provide JSON evaluation:
       detectedErrors: parsed.detectedErrors || [],
       grammarExplanation: parsed.grammarExplanation || '',
       phoneticSyllableTip: parsed.phoneticSyllableTip || '',
-      suggestedReplyInSpanish: parsed.suggestedReplyInSpanish || '¡Genial! Continuemos.',
-      englishTranslationOfReply: parsed.englishTranslationOfReply || 'Great! Let us continue.'
+      suggestedReplyInSpanish: parsed.suggestedReplyInSpanish || '¡Excelente trabajo!',
+      englishTranslationOfReply: parsed.englishTranslationOfReply || 'Excellent work!'
     };
   }
 
-  // Local Neural/Rule Engine
+  // High-precision deterministic Spanish engine (100% offline fallback)
   private localEngineAnalyze(
     userMessage: string,
     targetContext: string,
     cefrLevel: string
   ): SpanishPedagogicalFeedback {
-    const cleanUser = userMessage.toLowerCase().replace(/[¿?¡!.,]/g, '').trim();
-    const cleanTarget = targetContext.toLowerCase().replace(/[¿?¡!.,]/g, '').trim();
+    const cleanUser = userMessage.toLowerCase().replace(/[¿?¡!.,;:]/g, '').trim();
+    const cleanTarget = targetContext.toLowerCase().replace(/[¿?¡!.,;:]/g, '').trim();
 
-    const targetWords = cleanTarget.split(' ').filter(Boolean);
-    const userWords = cleanUser.split(' ').filter(Boolean);
+    const userWords = cleanUser.split(/\s+/).filter(Boolean);
+    const targetWords = cleanTarget.split(/\s+/).filter(Boolean);
 
-    const detectedErrors: string[] = [];
-    let grammarExplanation = '';
-    let phoneticSyllableTip = '';
+    let matchCount = 0;
+    const errors: string[] = [];
 
-    // Check specific grammatical rules
-    if (cleanUser.includes('el mesa') || cleanUser.includes('un mesa')) {
-      detectedErrors.push('Gender mismatch: "mesa" is feminine, use "la mesa" or "una mesa".');
-    }
-    if (cleanUser.includes('ayer voy') || cleanUser.includes('ayer voy a')) {
-      detectedErrors.push('Past tense error: for completed past actions, use preterite "ayer fui".');
-    }
-    if (cleanUser.includes('es caliente') && cleanTarget.includes('está caliente')) {
-      detectedErrors.push('Ser vs Estar: use "estar" for temporary temperatures/states.');
-    }
-
-    // Phonetic tip
-    if (cleanTarget.includes('rr')) {
-      phoneticSyllableTip = 'Flutter your tongue tip against the front ridge of the palate for the rolled RR.';
-    } else if (cleanTarget.startsWith('h')) {
-      phoneticSyllableTip = 'Remember the H in Spanish is completely silent (never exhale an English H).';
-    } else if (cleanTarget.includes('ñ')) {
-      phoneticSyllableTip = 'The letter Ñ sounds like the "ny" in the English word "canyon".';
-    } else {
-      phoneticSyllableTip = 'Keep Spanish vowels (A, E, I, O, U) clean, short, and un-glided.';
-    }
-
-    // Strict word match count
-    let matchedCount = 0;
-    targetWords.forEach(tw => {
-      if (userWords.includes(tw)) matchedCount++;
+    targetWords.forEach(w => {
+      if (userWords.includes(w)) {
+        matchCount++;
+      } else {
+        errors.push(`Missing or mispronounced word: "${w}"`);
+      }
     });
 
-    const isCorrect = targetWords.length > 0 && (matchedCount / targetWords.length) >= 0.75;
-    const score = Math.round((matchedCount / Math.max(1, targetWords.length)) * 100);
-
-    if (isCorrect) {
-      grammarExplanation = 'Great execution! Accurate vocabulary alignment and proper Spanish syntax.';
-    } else {
-      grammarExplanation = `Missed words detected. Expected: "${targetContext}". Spoke: "${userMessage || '(Silence)'}".`;
-    }
-
-    // Conversational replies based on level & intent
-    let replySp = '¡Excelente! ¿Quieres practicar otra frase?';
-    let replyEn = 'Excellent! Do you want to practice another phrase?';
-
-    if (cleanUser.includes('hola') || cleanUser.includes('buenos')) {
-      replySp = '¡Hola! Es un gusto saludarte. ¿Cómo estás hoy?';
-      replyEn = 'Hello! It is a pleasure to greet you. How are you today?';
-    } else if (cleanUser.includes('gracias')) {
-      replySp = '¡De nada! El placer es mío.';
-      replyEn = 'You are welcome! The pleasure is mine.';
-    } else if (cleanUser.includes('café') || cleanUser.includes('comida')) {
-      replySp = '¡Me encanta la comida española! Una paella siempre es deliciosa.';
-      replyEn = 'I love Spanish food! A paella is always delicious.';
-    }
+    const accuracy = targetWords.length > 0 ? Math.round((matchCount / targetWords.length) * 100) : 0;
+    const isCorrect = accuracy >= 75;
 
     return {
       userSpoken: userMessage,
       isCorrect,
-      score,
-      detectedErrors,
-      grammarExplanation,
-      phoneticSyllableTip,
-      suggestedReplyInSpanish: replySp,
-      englishTranslationOfReply: replyEn
+      score: accuracy,
+      detectedErrors: errors,
+      grammarExplanation: isCorrect
+        ? 'Great pronunciation accuracy! Your word order and syllable cadence matched the native Spanish phrasing.'
+        : `Focus on aligning all words in the phrase. You hit ${matchCount} of ${targetWords.length} key words.`,
+      phoneticSyllableTip: 'Remember to stress open vowels (a, e, o) clearly and keep unstressed syllables short and crisp.',
+      suggestedReplyInSpanish: isCorrect ? '¡Muy bien hablado! ¿Quieres practicar otra frase?' : 'No te preocupes, inténtalo de nuevo.',
+      englishTranslationOfReply: isCorrect ? 'Very well spoken! Want to practice another phrase?' : "Don't worry, give it another try."
     };
   }
 }

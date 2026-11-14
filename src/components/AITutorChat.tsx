@@ -78,10 +78,17 @@ export const AITutorChat: React.FC = () => {
       setInterimTranscript(text);
     };
 
-    strictSpeechService.onFinalResult = (result: StrictSpeechResult) => {
+    strictSpeechService.onFinalResult = async (result: StrictSpeechResult) => {
       setIsListening(false);
-      if (result.transcript) {
-        handleUserTurn(result.transcript);
+      let text = result.transcript?.trim() || '';
+      if (!text && result.audioBlob && freeAIService.hasGroqKey()) {
+        try {
+          const aiTrans = await freeAIService.transcribeAudio(result.audioBlob);
+          if (aiTrans) text = aiTrans.trim();
+        } catch (e) {}
+      }
+      if (text) {
+        handleUserTurn(text);
       } else {
         playMicStopSound(stats.soundEnabled);
       }
