@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import {
   Flame,
@@ -13,6 +14,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { playClickSound } from '../utils/soundEffects';
+import { soundEffects } from '../utils/useSoundEffects';
 
 interface CortexNavbarProps {
   onOpenSettings: () => void;
@@ -164,69 +166,71 @@ export const CortexNavbar: React.FC<CortexNavbarProps> = ({ onOpenSettings }) =>
   );
 };
 
-// Mobile Bottom Navigation Bar (Rendered outside <header> so it anchors to viewport bottom)
+// Floating Mobile Bottom Navigation Dock (Ergonomic, Haptic, Framer Motion Pill)
 export const MobileBottomNav: React.FC = () => {
   const { activeTab, setActiveTab, stats } = useApp();
 
   const handleTab = (tab: any) => {
-    playClickSound(stats.soundEnabled);
+    soundEffects.triggerHaptic(20);
+    if (stats.soundEnabled) {
+      soundEffects.playClick();
+    }
     setActiveTab(tab);
   };
 
+  const navItems = [
+    { id: 'roadmap', label: 'Today', icon: Brain, activeColor: 'text-amber-300' },
+    { id: 'builder', label: 'Build', icon: Puzzle, activeColor: 'text-indigo-300' },
+    { id: 'practice', label: 'Speak', icon: Mic, activeColor: 'text-cyan-300', isCenter: true },
+    { id: 'dictionary', label: 'Words', icon: BookOpen, activeColor: 'text-rose-300' },
+    { id: 'analytics', label: 'Progress', icon: BarChart3, activeColor: 'text-emerald-300' },
+  ];
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex md:hidden items-center justify-around gap-1 border-t border-slate-800/90 bg-[#0B0F17]/95 px-2 pt-1.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] text-[10px] font-bold shadow-[0_-8px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl">
-      <button
-        onClick={() => handleTab('roadmap')}
-        className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[48px] transition-all ${
-          activeTab === 'roadmap' ? 'bg-cyan-500/20 text-cyan-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Brain className="w-4 h-4" />
-        <span className="truncate">Today</span>
-      </button>
+    <div className="fixed bottom-2.5 inset-x-2.5 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full max-w-md z-50 pointer-events-none">
+      <nav className="pointer-events-auto flex md:hidden items-center justify-around gap-1 p-1.5 rounded-3xl bg-[#0B0F19]/92 backdrop-blur-2xl border border-slate-700/60 shadow-[0_12px_40px_rgba(0,0,0,0.85)] select-none">
+        {navItems.map((item) => {
+          const isActive = activeTab === item.id;
+          const IconComponent = item.icon;
 
-      <button
-        onClick={() => handleTab('builder')}
-        className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[48px] transition-all ${
-          activeTab === 'builder' ? 'bg-indigo-500/20 text-indigo-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <Puzzle className="w-4 h-4" />
-        <span className="truncate">Build</span>
-      </button>
+          if (item.isCenter) {
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTab(item.id)}
+                className={`relative -mt-4 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl py-1.5 min-h-[52px] border-b-4 transition-all active:translate-y-1 active:border-b-0 cursor-pointer shadow-lg ${
+                  isActive
+                    ? 'border-cyan-600 bg-gradient-to-tr from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 font-black shadow-cyan-500/30 ring-2 ring-cyan-300/50'
+                    : 'border-slate-800 bg-gradient-to-tr from-cyan-600/30 to-teal-500/20 text-cyan-300 font-bold hover:bg-cyan-500/30'
+                }`}
+              >
+                <IconComponent className="w-5 h-5" />
+                <span className="font-black text-[9px] uppercase tracking-wider leading-none">Speak</span>
+              </button>
+            );
+          }
 
-      {/* Center prominent Speak CTA button */}
-      <button
-        onClick={() => handleTab('practice')}
-        className={`mobile-nav-item -mt-3.5 flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl py-1.5 min-h-[54px] border transition-all ${
-          activeTab === 'practice'
-            ? 'border-cyan-300/60 bg-gradient-to-tr from-cyan-400 to-teal-400 text-slate-950 shadow-lg shadow-cyan-400/30 font-black'
-            : 'border-cyan-500/30 bg-cyan-500/15 text-cyan-300 shadow-md shadow-cyan-500/15'
-        }`}
-      >
-        <Mic className="w-5 h-5" />
-        <span className="font-black text-[9px] uppercase tracking-wider">Speak</span>
-      </button>
-
-      <button
-        onClick={() => handleTab('dictionary')}
-        className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[48px] transition-all ${
-          activeTab === 'dictionary' ? 'bg-rose-500/20 text-rose-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <BookOpen className="w-4 h-4" />
-        <span className="truncate">Words</span>
-      </button>
-
-      <button
-        onClick={() => handleTab('analytics')}
-        className={`mobile-nav-item flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 min-h-[48px] transition-all ${
-          activeTab === 'analytics' ? 'bg-cyan-500/20 text-cyan-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        <BarChart3 className="w-4 h-4" />
-        <span className="truncate">Progress</span>
-      </button>
-    </nav>
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTab(item.id)}
+              className="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-2 min-h-[46px] transition-colors cursor-pointer"
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeFloatingTabPill"
+                  transition={{ type: 'spring', stiffness: 480, damping: 32 }}
+                  className="absolute inset-0 rounded-2xl bg-white/10 border border-white/15 shadow-[0_0_15px_rgba(255,255,255,0.06)]"
+                />
+              )}
+              <IconComponent className={`relative z-10 w-4 h-4 transition-colors ${isActive ? item.activeColor : 'text-slate-400'}`} />
+              <span className={`relative z-10 text-[10px] font-bold tracking-tight truncate leading-none transition-colors ${isActive ? 'text-white font-black' : 'text-slate-400'}`}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 };

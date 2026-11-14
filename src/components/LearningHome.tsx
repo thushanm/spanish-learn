@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { getDailyQuest, getPlayerLevel } from '../utils/progression';
 import { PrincessCompanion } from './PrincessCompanion';
+import { RoyalLearningPath } from './RoyalLearningPath';
+import { TactileButton } from './ui/TactileButton';
 
 const OUTCOMES: Record<string, string> = {
   'unit-1': 'Greet someone, introduce yourself, and be polite.',
@@ -130,14 +132,16 @@ export const LearningHome: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <button
+            <TactileButton
+              variant="cyan"
+              size="lg"
               onClick={() => openActivity('practice')}
-              className="mobile-primary-cta group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 text-sm font-black text-slate-950 shadow-lg shadow-cyan-400/20 transition hover:scale-[1.02] hover:bg-cyan-300"
+              className="w-full sm:w-auto"
             >
               <Mic className="h-5 w-5" />
-              Begin today&apos;s lesson
-              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
+              <span>Begin today&apos;s lesson</span>
+              <ChevronRight className="h-4 w-4" />
+            </TactileButton>
             <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3 text-left backdrop-blur-sm">
               <div className="flex items-center justify-between gap-4 text-xs">
                 <span className="flex items-center gap-1.5 font-black text-amber-300"><Trophy className="h-4 w-4" /> Level {playerLevel.level}</span>
@@ -154,6 +158,9 @@ export const LearningHome: React.FC = () => {
 
       {/* Royal Princess Companion & Motivational Cheering Guide */}
       <PrincessCompanion />
+
+      {/* Royal Winding Learning Path with Pulsing Nodes & Chest Rewards */}
+      <RoyalLearningPath />
 
       <section className="game-journey rounded-[28px] border border-indigo-400/20 bg-gradient-to-r from-indigo-950/35 via-slate-900 to-fuchsia-950/30 p-4 sm:p-5 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-3">

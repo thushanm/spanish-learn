@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { SPANISH_UNITS } from '../data/spanishData';
 import { SpanishWordPhrase, SpeechScoreResult } from '../types';
@@ -711,20 +712,28 @@ export const AcousticSpeechStudio: React.FC = () => {
           <div className="relative">
             {isListening && (
               <>
-                <div className="absolute -inset-3 rounded-full bg-cyan-500/30 animate-ping pointer-events-none" />
-                <div className="absolute -inset-6 rounded-full bg-cyan-500/15 animate-pulse pointer-events-none" />
+                <motion.div
+                  animate={{ scale: [1, 1.4, 1.8], opacity: [0.6, 0.25, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.8, ease: 'easeOut' }}
+                  className="absolute -inset-4 rounded-full bg-cyan-400/35 pointer-events-none"
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1.5], opacity: [0.7, 0.35, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.8, delay: 0.45, ease: 'easeOut' }}
+                  className="absolute -inset-8 rounded-full bg-emerald-400/25 pointer-events-none"
+                />
               </>
             )}
 
             <button
               onClick={isEvaluating ? undefined : (isListening ? stopListening : startListening)}
               disabled={isEvaluating}
-              className={`mobile-mic-button relative z-10 w-28 h-28 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center font-black transition-all shadow-xl ${
+              className={`mobile-mic-button relative z-10 w-28 h-28 sm:w-26 sm:h-26 rounded-full flex flex-col items-center justify-center font-black transition-all shadow-2xl cursor-pointer ${
                 isListening
-                  ? 'bg-rose-600 text-white scale-110 shadow-rose-600/40 animate-pulse'
+                  ? 'bg-rose-600 text-white scale-110 shadow-rose-600/50 animate-pulse'
                   : isEvaluating
-                    ? 'bg-indigo-500 text-white shadow-indigo-500/30 cursor-wait'
-                  : 'bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 shadow-cyan-500/30 hover:scale-105'
+                  ? 'bg-indigo-500 text-white shadow-indigo-500/40 cursor-wait'
+                  : 'bg-gradient-to-tr from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 shadow-[0_0_35px_rgba(34,211,238,0.35)] hover:scale-105 active:scale-95'
               }`}
             >
               {isEvaluating ? (
@@ -746,20 +755,32 @@ export const AcousticSpeechStudio: React.FC = () => {
             </button>
           </div>
 
-          {/* Real Live Volume Meter */}
+          {/* Real-time Glowing Waveform Oscilloscope */}
           {isListening && (
-            <div className="flex flex-col items-center space-y-1.5 animate-in fade-in">
-              <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
-                Microphone Activity:
+            <div className="flex flex-col items-center space-y-2 animate-in fade-in pt-1">
+              <span className="text-[11px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <span>Web Audio Waveform Oscilloscope</span>
               </span>
-              <div className="w-64 max-w-[76vw] h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-75 rounded-full"
-                  style={{ width: `${Math.max(10, liveVolume)}%` }}
-                />
+
+              {/* 20-bar glowing responsive waveform visualizer */}
+              <div className="flex items-center justify-center gap-1.5 h-12 px-5 py-2 rounded-2xl bg-slate-950/90 border border-cyan-500/30 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
+                {Array.from({ length: 20 }).map((_, barIdx) => {
+                  const waveFactor = Math.sin((barIdx / 20) * Math.PI);
+                  const barHeight = Math.max(6, Math.min(42, (liveVolume * 0.45 * waveFactor) + 6));
+                  return (
+                    <motion.div
+                      key={barIdx}
+                      animate={{ height: `${barHeight}px` }}
+                      transition={{ duration: 0.08, ease: 'easeOut' }}
+                      className="w-1.5 rounded-full bg-gradient-to-t from-cyan-500 via-teal-400 to-emerald-400"
+                    />
+                  );
+                })}
               </div>
+
               <p className="text-xs text-slate-400 font-semibold">
-                {liveVolume > 15 ? '🗣️ Voice detected! Speaking Spanish...' : 'Speak into your microphone now...'}
+                {liveVolume > 15 ? '🗣️ Voice detected! Speaking Spanish...' : 'Speak clearly into your microphone now...'}
               </p>
             </div>
           )}
@@ -988,25 +1009,71 @@ export const AcousticSpeechStudio: React.FC = () => {
           </div>
         )}
 
-        {/* RIGOROUS EVALUATION SCORECARD */}
+        {/* RIGOROUS EVALUATION SCORECARD WITH ANIMATED RADIAL GAUGE */}
         {scoreResult && (
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
             className={`p-6 rounded-3xl border transition-all space-y-4 ${
               scoreResult.score >= 75
-                ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
-                : 'bg-rose-950/20 border-rose-500/40 text-rose-200'
+                ? 'bg-gradient-to-br from-emerald-950/40 via-slate-900 to-teal-950/30 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)] text-emerald-200'
+                : 'bg-gradient-to-br from-rose-950/40 via-slate-900 to-amber-950/20 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.15)] text-rose-200'
             }`}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
               <div className="flex items-center gap-4">
-                <div
-                  className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black border shadow-lg ${
-                    scoreResult.score >= 75
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-400 border-rose-500/40'
-                  }`}
-                >
-                  {scoreResult.score}%
+                {/* AAA Animated Circular Radial Progress Gauge */}
+                <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+                  <svg className="w-20 h-20 -rotate-90" viewBox="0 0 44 44">
+                    {/* Background track circle */}
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      className="text-slate-800"
+                      strokeWidth="4"
+                      stroke="currentColor"
+                      fill="transparent"
+                    />
+                    {/* Glowing Animated Radial Progress Arc */}
+                    <motion.circle
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      strokeWidth="4"
+                      strokeDasharray={113.1}
+                      initial={{ strokeDashoffset: 113.1 }}
+                      animate={{
+                        strokeDashoffset: 113.1 - (113.1 * (Math.min(100, Math.max(0, scoreResult.score)) / 100))
+                      }}
+                      transition={{ duration: 1.0, ease: [0.34, 1.56, 0.64, 1] }}
+                      strokeLinecap="round"
+                      className={
+                        scoreResult.score >= 75
+                          ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]'
+                          : 'text-rose-400 drop-shadow-[0_0_12px_rgba(251,113,133,0.8)]'
+                      }
+                      stroke="currentColor"
+                      fill="transparent"
+                    />
+                  </svg>
+                  {/* Gauge Center Percentage */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none">
+                    <motion.span
+                      initial={{ scale: 0.4, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, type: 'spring', stiffness: 400 }}
+                      className={`text-lg font-black tracking-tight leading-none ${
+                        scoreResult.score >= 75 ? 'text-emerald-300' : 'text-rose-300'
+                      }`}
+                    >
+                      {scoreResult.score}%
+                    </motion.span>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mt-0.5">
+                      {scoreResult.score >= 75 ? 'Pasa' : 'Ajustar'}
+                    </span>
+                  </div>
                 </div>
 
                 <div>
@@ -1031,9 +1098,9 @@ export const AcousticSpeechStudio: React.FC = () => {
 
               {/* What was heard vs expected */}
               {scoreResult.rawTranscript && (
-                <div className="text-xs bg-slate-950/70 p-3 rounded-xl border border-slate-800 text-slate-300">
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">What was heard:</span>
-                  <span className="font-mono font-bold text-amber-300">"{scoreResult.rawTranscript}"</span>
+                <div className="text-xs bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 text-slate-300 shadow-inner">
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">What was heard:</span>
+                  <span className="font-mono font-bold text-amber-300 text-sm">"{scoreResult.rawTranscript}"</span>
                 </div>
               )}
             </div>
@@ -1096,7 +1163,7 @@ export const AcousticSpeechStudio: React.FC = () => {
                 </button>
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Navigation Arrows */}
