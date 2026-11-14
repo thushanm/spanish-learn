@@ -52,14 +52,14 @@ export const CortexNavbar: React.FC<CortexNavbarProps> = ({ onOpenSettings }) =>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-base sm:text-xl tracking-tight text-white whitespace-nowrap">
-                  <span className="text-cyan-400">Habla</span> Spanish
+                  <span className="text-cyan-400">JTM</span> Spanish Learn
                 </span>
                 <span className="hidden sm:inline text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                  Speak every day
+                  Neuro-Immersion
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 hidden sm:block font-medium">
-                Short, useful Spanish practice (A1 - B2)
+                Cognitive Spanish Acquisition (A1 - B2)
               </p>
             </div>
           </div>

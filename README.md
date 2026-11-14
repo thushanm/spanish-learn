@@ -1,7 +1,7 @@
-# CortexSpanish 🇪🇸🧠
+# JTM Spanish Learn 🇪🇸🧠
 ### Cognitive Spanish Neuro-Immersion Web Application (A1 – B2)
 
-**CortexSpanish** is a modern, high-dopamine spoken Spanish acquisition platform built around cognitive science principles (Spaced Repetition, Phonemic Auditory Mirroring, and Strict Acoustic Evaluation). Designed to take learners from **Absolute Beginner (A1)** to **Conversational Fluency (B2)** with English instruction.
+**JTM Spanish Learn** is a modern, high-dopamine spoken Spanish acquisition platform built around cognitive science principles (Spaced Repetition, Phonemic Auditory Mirroring, and Strict Acoustic Evaluation). Designed to take learners from **Absolute Beginner (A1)** to **Conversational Fluency (B2)** with English instruction.
 
 ---
 

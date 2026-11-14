@@ -44,7 +44,7 @@ const AppContent: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-3 font-semibold text-slate-400">
             <span className="flex items-center gap-1.5 text-cyan-400">
               <Brain className="w-4 h-4" />
-              <span>Habla Spanish</span>
+              <span>JTM Spanish Learn</span>
             </span>
             <span className="text-slate-600">•</span>
             <span className="flex items-center gap-1.5 text-emerald-400">
