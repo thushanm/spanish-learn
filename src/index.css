@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: #070a0f;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overscroll-behavior-y: none;
+  }
+
+  button, select, input {
+    touch-action: manipulation;
+  }
+
+  /* Custom Smooth Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #090d16;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+  }
+}
+
+/* Custom interactive pulse and glows */
+@keyframes pulseSubtle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s infinite ease-in-out;
+}
+
+@keyframes mobileCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes orbitGlow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-20px, 18px, 0) scale(1.12); }
+}
+
+@keyframes micBreathe {
+  0%, 100% { box-shadow: 0 10px 30px rgba(34, 211, 238, 0.26); }
+  50% { box-shadow: 0 12px 44px rgba(45, 212, 191, 0.52), 0 0 0 9px rgba(34, 211, 238, 0.06); }
+}
+
+@keyframes dockGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(34, 211, 238, 0); }
+  50% { box-shadow: 0 0 16px rgba(34, 211, 238, 0.32); }
+}
+
+@keyframes mobileSheetIn {
+  from { opacity: 0; transform: translateY(48px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rewardPop {
+  0% { opacity: 0; transform: translateY(20px) scale(0.92); }
+  65% { opacity: 1; transform: translateY(-3px) scale(1.025); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.reward-toast {
+  animation: rewardPop 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes builderPraiseBurst {
+  0% { opacity: 0; transform: translateY(16px) scale(0.94) rotate(-1deg); }
+  55% { opacity: 1; transform: translateY(-4px) scale(1.025) rotate(0.5deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes builderFeedbackPop {
+  0% { opacity: 0; transform: scale(0.96); }
+  70% { opacity: 1; transform: scale(1.012); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.builder-praise-burst {
+  animation: builderPraiseBurst 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.builder-feedback-pop {
+  animation: builderFeedbackPop 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  .mobile-page > * {
+    animation: mobileCardIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .mobile-page > *:nth-child(2) { animation-delay: 45ms; }
+  .mobile-page > *:nth-child(3) { animation-delay: 90ms; }
+  .mobile-page > *:nth-child(4) { animation-delay: 135ms; }
+
+  .hero-orbit {
+    animation: orbitGlow 7s ease-in-out infinite;
+  }
+
+  .mobile-primary-cta {
+    animation: micBreathe 2.8s ease-in-out infinite;
+  }
+
+  .mobile-mic-button:not(:disabled) {
+    animation: micBreathe 2.4s ease-in-out infinite;
+  }
+
+  .mobile-nav-item:active,
+  .mobile-step-card:active {
+    transform: scale(0.96);
+  }
+
+  .mobile-nav-item[class*="bg-cyan-400"] {
+    animation: dockGlow 2.4s ease-in-out infinite;
+  }
+
+  .mobile-speaking-card::after {
+    content: "";
+    position: absolute;
+    width: 210px;
+    height: 210px;
+    left: 50%;
+    bottom: -165px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: rgba(34, 211, 238, 0.11);
+    filter: blur(28px);
+    pointer-events: none;
+  }
+
+  .mobile-sheet {
+    animation: mobileSheetIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
