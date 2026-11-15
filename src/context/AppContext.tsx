@@ -14,6 +14,9 @@ export type ActiveTab =
   | 'dictionary'
   | 'analytics';
 
+export type CartoonMascotMood = 'idle' | 'cheering' | 'party_dance' | 'sad' | 'crying' | 'celebrate_finish';
+export type GameplayMood = 'normal' | 'streak' | 'mistake';
+
 interface AppContextType {
   stats: UserStats;
   addXP: (amount: number) => void;
@@ -27,6 +30,13 @@ interface AppContextType {
   setSelectedUnitId: (id: string | null) => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  // Cartoon Arcade Mood & Mascot State
+  comboStreak: number;
+  consecutiveMistakes: number;
+  mascotMood: CartoonMascotMood;
+  setMascotMood: (mood: CartoonMascotMood) => void;
+  gameplayMood: GameplayMood;
+  triggerGameAction: (action: 'correct' | 'wrong' | 'complete' | 'reset') => void;
 }
 
 const DEFAULT_STATS: UserStats = {
@@ -98,6 +108,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>('unit-1');
   const [activeTab, setActiveTab] = useState<ActiveTab>('roadmap');
+
+  // Cartoon Arcade Mood & Mascot State
+  const [comboStreak, setComboStreak] = useState(0);
+  const [consecutiveMistakes, setConsecutiveMistakes] = useState(0);
+  const [mascotMood, setMascotMood] = useState<CartoonMascotMood>('idle');
+
+  const gameplayMood: GameplayMood =
+    consecutiveMistakes > 0
+      ? 'mistake'
+      : comboStreak >= 2
+      ? 'streak'
+      : 'normal';
+
+  const triggerGameAction = (action: 'correct' | 'wrong' | 'complete' | 'reset') => {
+    if (action === 'correct') {
+      setConsecutiveMistakes(0);
+      setComboStreak(prev => {
+        const next = prev + 1;
+        if (next >= 3) {
+          setMascotMood('party_dance');
+        } else {
+          setMascotMood('cheering');
+        }
+        return next;
+      });
+      setTimeout(() => {
+        setMascotMood(prev => (prev === 'party_dance' || prev === 'cheering' ? 'idle' : prev));
+      }, 3500);
+    } else if (action === 'wrong') {
+      setComboStreak(0);
+      setConsecutiveMistakes(prev => {
+        const next = prev + 1;
+        if (next >= 2) {
+          setMascotMood('crying');
+        } else {
+          setMascotMood('sad');
+        }
+        return next;
+      });
+      setTimeout(() => {
+        setMascotMood(prev => (prev === 'crying' || prev === 'sad' ? 'idle' : prev));
+      }, 4200);
+    } else if (action === 'complete') {
+      setMascotMood('celebrate_finish');
+    } else if (action === 'reset') {
+      setComboStreak(0);
+      setConsecutiveMistakes(0);
+      setMascotMood('idle');
+    }
+  };
 
   useEffect(() => {
     try {
@@ -296,7 +356,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedUnitId,
         setSelectedUnitId,
         activeTab,
-        setActiveTab
+        setActiveTab,
+        comboStreak,
+        consecutiveMistakes,
+        mascotMood,
+        setMascotMood,
+        gameplayMood,
+        triggerGameAction
       }}
     >
       {children}

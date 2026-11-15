@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SPANISH_UNITS, ALL_SPANISH_WORDS } from '../data/spanishData';
@@ -196,11 +197,10 @@ export const CognitiveAnalytics: React.FC = () => {
                   {/* Visual Bar with Gradient */}
                   <div className="w-full max-w-[48px] bg-slate-900 rounded-xl overflow-hidden h-full flex items-end p-1">
                     <div
-                      className={`w-full rounded-lg transition-all duration-700 ${
-                        isToday
+                      className={`w-full rounded-lg transition-all duration-700 ${isToday
                           ? 'bg-gradient-to-t from-cyan-500 via-indigo-500 to-emerald-400'
                           : 'bg-gradient-to-t from-slate-700 to-cyan-500/70'
-                      }`}
+                        }`}
                       style={{ height: `${heightPercent}%` }}
                     />
                   </div>

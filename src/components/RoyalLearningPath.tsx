@@ -60,12 +60,12 @@ export const RoyalLearningPath: React.FC = () => {
   return (
     <div className="relative py-8 select-none">
       <div className="text-center mb-8 space-y-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-black uppercase tracking-wider">
-          <Crown className="w-3.5 h-3.5" />
-          <span>Camino Real del Español</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border-2 border-amber-300 text-amber-800 text-xs font-black uppercase tracking-wider shadow-sm">
+          <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+          <span>Camino de Aventuras · A1 a B2</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-white">Your Royal Journey to Fluency</h2>
-        <p className="text-xs text-slate-400">Step by step through CEFR levels A1 to B2</p>
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900">Your Spanish Adventure Map</h2>
+        <p className="text-xs font-bold text-slate-600">Step by step through real conversations & missions</p>
       </div>
 
       {/* Winding Path Nodes List */}
@@ -137,32 +137,32 @@ export const RoyalLearningPath: React.FC = () => {
                 {/* 3D Circular Lesson Button */}
                 <motion.button
                   whileHover={isLocked ? undefined : { scale: 1.08 }}
-                  whileTap={isLocked ? undefined : { y: 4 }}
+                  whileTap={isLocked ? undefined : { y: 5 }}
                   onClick={() => handleNodeClick(unit.id, isLocked)}
-                  className={`relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[26px] border-b-[5px] transition-all cursor-pointer ${
+                  className={`relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[28px] border-b-[6px] transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-gradient-to-tr from-amber-400 via-yellow-400 to-amber-300 border-amber-600 shadow-[0_0_28px_rgba(245,158,11,0.45)] text-slate-950 ring-4 ring-amber-400/30'
+                      ? 'bg-[#FFC800] border-[#E5A400] shadow-[0_8px_0_rgba(229,164,0,0.5)] text-slate-900 ring-4 ring-white'
                       : isCompleted
-                      ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 border-emerald-700 shadow-lg shadow-emerald-500/20 text-slate-950'
-                      : 'bg-slate-800 border-slate-950 text-slate-500 cursor-not-allowed opacity-75'
+                      ? 'bg-[#58CC02] border-[#46A302] shadow-[0_6px_0_rgba(70,163,2,0.4)] text-white'
+                      : 'bg-slate-200 border-slate-300 text-slate-400 cursor-not-allowed opacity-80'
                   }`}
                 >
                   {isCompleted ? (
-                    <Check className="w-8 h-8 stroke-[3]" />
+                    <Check className="w-8 h-8 stroke-[3.5]" />
                   ) : isActive ? (
-                    <Crown className="w-8 h-8 stroke-[2.5]" />
+                    <Trophy className="w-8 h-8 stroke-[2.5]" />
                   ) : (
                     <Lock className="w-6 h-6" />
                   )}
 
                   {/* Level Pill */}
                   <span
-                    className={`absolute -bottom-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                    className={`absolute -bottom-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border-2 shadow-sm ${
                       isActive
-                        ? 'bg-slate-950 border-amber-400 text-amber-300'
+                        ? 'bg-white border-amber-400 text-amber-800'
                         : isCompleted
-                        ? 'bg-slate-950 border-emerald-400 text-emerald-300'
-                        : 'bg-slate-900 border-slate-700 text-slate-400'
+                        ? 'bg-white border-emerald-400 text-emerald-800'
+                        : 'bg-white border-slate-300 text-slate-500'
                     }`}
                   >
                     {unit.level}
@@ -171,19 +171,19 @@ export const RoyalLearningPath: React.FC = () => {
 
                 {/* Node Title & Star Rating */}
                 <div className="mt-3 text-center max-w-[170px]">
-                  <p className={`text-xs font-black truncate ${isActive ? 'text-amber-300' : 'text-slate-200'}`}>
+                  <p className={`text-xs font-black truncate ${isActive ? 'text-slate-900' : 'text-slate-800'}`}>
                     {unit.title}
                   </p>
-                  <p className="text-[10px] text-slate-400 truncate">
+                  <p className="text-[10px] text-slate-600 font-bold truncate">
                     {unit.subtitle}
                   </p>
 
                   {/* 3 Golden Stars for completed lessons */}
                   {isCompleted && (
                     <div className="flex items-center justify-center gap-0.5 mt-1">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                     </div>
                   )}
                 </div>

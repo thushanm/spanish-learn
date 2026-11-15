@@ -39,29 +39,29 @@ export const GameRewardToast: React.FC = () => {
     let nextReward: Reward;
     if (currentLevel.level > previousLevel.level) {
       nextReward = {
-        title: `👑 ¡Nivel ${currentLevel.level}: ${currentLevel.title}!`,
-        detail: `¡Corona Real Desbloqueada! Tu fluidez avanza con poder.`,
+        title: `🎉 ¡Nivel ${currentLevel.level}: ${currentLevel.title}!`,
+        detail: `¡Nuevo rango arcade desbloqueado! Tu fluidez avanza con poder.`,
         xp: xpEarned,
-        emoji: '👸',
+        emoji: '⭐',
         kind: 'level'
       };
       playLevelUpSound(stats.soundEnabled);
-      confetti({ particleCount: 110, spread: 72, startVelocity: 34, colors: ['#F59E0B', '#EC4899', '#38BDF8', '#10B981'], origin: { y: 0.72 } });
+      confetti({ particleCount: 110, spread: 72, startVelocity: 34, colors: ['#FFC800', '#58CC02', '#1CB0F6', '#FF6492'], origin: { y: 0.72 } });
     } else if (completedNow) {
       const unit = SPANISH_UNITS.find(item => item.id === completedNow);
       nextReward = {
-        title: '🏆 ¡Tema Completado con Éxito!',
+        title: '🏆 ¡Tema Completado!',
         detail: `${unit?.title || 'Esta lección'} ya es parte de tu tesoro de español.`,
         xp: xpEarned,
-        emoji: '👑',
+        emoji: '🏆',
         kind: 'unit'
       };
       playLevelUpSound(stats.soundEnabled);
-      confetti({ particleCount: 90, spread: 66, colors: ['#F59E0B', '#EC4899', '#38BDF8'], origin: { y: 0.72 } });
+      confetti({ particleCount: 90, spread: 66, colors: ['#FFC800', '#58CC02', '#1CB0F6'], origin: { y: 0.72 } });
     } else if (completedMiniQuest) {
       nextReward = {
         title: '💎 ¡Mini Misión Conquistada!',
-        detail: 'Tres nuevas frases de oro grabadas en tu memoria para siempre.',
+        detail: 'Tres nuevas frases grabadas en tu memoria para siempre.',
         xp: xpEarned,
         emoji: '✨',
         kind: 'unit'
@@ -74,10 +74,10 @@ export const GameRewardToast: React.FC = () => {
       if (now - lastSmallRewardAt.current < 1400) return;
       lastSmallRewardAt.current = now;
       nextReward = {
-        title: xpEarned >= 25 ? '💖 ¡Pronunciación de Princesa!' : '🌟 ¡Triunfo Español!',
-        detail: xpEarned >= 25 ? '¡Ese acento suena como un palacio real!' : 'Paso a paso hacia la corona.',
+        title: xpEarned >= 25 ? '🎉 ¡Pronunciación Estelar!' : '🌟 ¡Triunfo Español!',
+        detail: xpEarned >= 25 ? '¡Ese acento suena genial y natural!' : '¡Paso a paso hacia la fluidez!',
         xp: xpEarned,
-        emoji: xpEarned >= 25 ? '👸' : '🌟',
+        emoji: xpEarned >= 25 ? '🌟' : '🎉',
         kind: 'xp'
       };
       playXpRewardSound(stats.soundEnabled, xpEarned >= 25);
@@ -98,21 +98,20 @@ export const GameRewardToast: React.FC = () => {
 
   return (
     <div className="reward-toast fixed inset-x-4 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-[55] mx-auto max-w-sm md:inset-x-auto md:bottom-6 md:right-6 animate-princess-pop">
-      <div className={`relative overflow-hidden rounded-3xl border bg-gradient-to-br ${accent} p-[1.5px] shadow-2xl`}>
-        <div className="relative flex items-center gap-3 rounded-[23px] bg-[#0B0F17]/95 p-4 backdrop-blur-xl">
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accent} text-2xl shadow-lg animate-float-gently`}>
+      <div className="relative overflow-hidden rounded-[28px] border-4 border-white bg-white/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] backdrop-blur-xl text-slate-800">
+        <div className="relative flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 border-2 border-amber-300 text-2xl shadow-md">
             {reward.emoji}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-black text-white">{reward.title}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-slate-300">{reward.detail}</p>
+            <p className="text-sm font-black text-slate-900 leading-tight">{reward.title}</p>
+            <p className="mt-0.5 text-xs font-bold leading-relaxed text-slate-500">{reward.detail}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 rounded-xl bg-amber-400/20 border border-amber-400/40 px-2.5 py-1.5 text-xs font-black text-amber-300 shadow-sm">
-            <Zap className="h-3.5 w-3.5 fill-amber-300" />
+          <div className="flex shrink-0 items-center gap-1 rounded-2xl bg-amber-100 border-2 border-amber-300 px-2.5 py-1.5 text-xs font-black text-amber-800 shadow-sm">
+            <Zap className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
             +{reward.xp}
           </div>
-          <Sparkles className="absolute -right-1 -top-1 h-5 w-5 animate-sparkle-spin text-amber-300" />
-          <ChevronUp className="absolute bottom-1 right-3 h-3 w-3 animate-bounce text-white/30" />
+          <Sparkles className="absolute -right-1 -top-1 h-5 w-5 animate-sparkle-spin text-amber-500" />
         </div>
       </div>
     </div>

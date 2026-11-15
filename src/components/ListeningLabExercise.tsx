@@ -24,7 +24,7 @@ import {
 import confetti from 'canvas-confetti';
 
 export const ListeningLabExercise: React.FC = () => {
-  const { stats, addXP, selectedUnitId } = useApp();
+  const { stats, addXP, selectedUnitId, triggerGameAction } = useApp();
 
   const currentUnit = SPANISH_UNITS.find(u => u.id === selectedUnitId) || SPANISH_UNITS[0];
   const items = currentUnit.items;
@@ -113,6 +113,7 @@ export const ListeningLabExercise: React.FC = () => {
     setIsCorrect(correct);
 
     if (correct) {
+      triggerGameAction('correct');
       playCorrectSound(stats.soundEnabled);
       addXP(15);
       setScoreCount(prev => {
@@ -129,6 +130,7 @@ export const ListeningLabExercise: React.FC = () => {
         origin: { y: 0.7 }
       });
     } else {
+      triggerGameAction('wrong');
       playIncorrectSound(stats.soundEnabled);
     }
   };
@@ -144,107 +146,87 @@ export const ListeningLabExercise: React.FC = () => {
   };
 
   return (
-    <div className="mobile-page max-w-4xl mx-auto px-4 py-5 sm:py-8">
+    <div className="mobile-page max-w-4xl mx-auto px-4 py-5 sm:py-8 space-y-4">
       {/* Top Header Card */}
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-[26px] sm:rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/40 border border-purple-500/20 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[32px] border-4 border-white bg-white/95 shadow-[0_12px_0_rgba(0,0,0,0.08)] text-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-md">
+          <div className="w-12 h-12 rounded-2xl bg-purple-100 border-2 border-purple-300 flex items-center justify-center text-purple-600 shadow-sm">
             <Headphones className="w-6 h-6 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-white">Acoustic Audio Lab</h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              <h1 className="text-xl font-black text-slate-900">Acoustic Audio Lab</h1>
+              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border-2 border-purple-300 uppercase">
                 Auditory Cloze
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Listen to native Spanish pronunciation and train your auditory phoneme recognition.
+            <p className="text-xs font-bold text-slate-500 mt-0.5">
+              Listen to native Spanish pronunciation and train your auditory recognition.
             </p>
           </div>
         </div>
 
         {/* Progress & Score */}
-        <div className="flex items-center gap-3">
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 font-semibold">
-            Item <span className="text-purple-400 font-bold">{currentIndex + 1}</span> of {items.length}
+        <div className="flex items-center gap-2">
+          <div className="px-3.5 py-1.5 rounded-2xl bg-slate-100 border-2 border-slate-200 text-xs text-slate-700 font-black">
+            Item <span className="text-purple-600">{currentIndex + 1}</span> of {items.length}
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold">
-            <Award className="w-4 h-4 text-purple-400" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-purple-100 border-2 border-purple-300 text-purple-800 text-xs font-black shadow-sm">
+            <Award className="w-4 h-4 text-purple-600" />
             <span>Mastery: {scoreCount}</span>
           </div>
         </div>
       </div>
 
       {/* Main Acoustic Interaction Chamber */}
-      <div className="bg-[#0B0F17] rounded-[28px] sm:rounded-3xl border border-slate-800/80 p-4 sm:p-10 shadow-2xl relative overflow-hidden">
-        {/* Glow ambient backdrops */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="rounded-[32px] border-4 border-white bg-white/95 p-5 sm:p-10 shadow-[0_12px_0_rgba(0,0,0,0.08)] relative overflow-hidden text-slate-800">
         {/* Audio Player Hub */}
-        <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
+        <div className="flex flex-col items-center justify-center py-4 text-center space-y-4">
           <div className="relative">
-            {/* Visual soundwave ripple effect */}
-            {isPlayingAudio && (
-              <span className="absolute -inset-4 rounded-full bg-purple-500/20 animate-ping opacity-75" />
-            )}
             <button
               onClick={() => handlePlayAudio(1.0)}
               disabled={isPlayingAudio}
-            className={`relative z-10 w-28 h-28 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all transform active:scale-95 ${
+              className={`relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full flex flex-col items-center justify-center shadow-lg transition-all border-b-[6px] active:translate-y-1.5 active:border-b-0 cursor-pointer ${
                 isPlayingAudio
-                  ? 'bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-purple-500/40 scale-105'
-                  : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30 hover:scale-105'
+                  ? 'border-[#8B2BE2] bg-[#A855F7] text-white scale-105 shadow-purple-500/40'
+                  : 'border-[#8B2BE2] bg-[#A855F7] hover:bg-[#B66BFC] text-white shadow-purple-500/30 hover:scale-105'
               }`}
             >
-              <Volume2 className={`w-10 h-10 ${isPlayingAudio ? 'animate-bounce' : ''}`} />
-              <span className="text-[10px] font-bold uppercase tracking-wider mt-1">
+              <Volume2 className={`w-9 h-9 ${isPlayingAudio ? 'animate-bounce' : ''}`} />
+              <span className="text-[10px] font-black uppercase tracking-wider mt-1">
                 {isPlayingAudio ? 'Playing...' : 'Play Audio'}
               </span>
             </button>
           </div>
 
           {/* Secondary Controls: Slow Speed & Phonetic hint */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => handlePlayAudio(0.75)}
               disabled={isPlayingAudio}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 text-slate-700 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Turtle className="w-3.5 h-3.5 text-purple-400" />
-              <span>Slow (0.75x)</span>
-            </button>
-            <button
-              onClick={() => handlePlayAudio(1.0)}
-              disabled={isPlayingAudio}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-              <span>Replay</span>
+              <Turtle className="w-3.5 h-3.5 text-purple-600" />
+              <span>Slow Audio</span>
             </button>
           </div>
-
-          <p className="text-xs text-slate-400 font-medium">
-            Listen carefully to the audio and identify the missing word in the sentence below.
-          </p>
         </div>
 
         {/* Masked Sentence Display */}
-          <div className="my-5 sm:my-6 p-4 sm:p-6 rounded-2xl bg-slate-900/90 border border-slate-800 text-center">
-          <div className="text-xl sm:text-2xl font-bold text-white tracking-wide leading-relaxed">
+        <div className="my-5 sm:my-6 p-4 sm:p-6 rounded-2xl border-2 border-slate-200 bg-slate-50 text-center">
+          <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-wide leading-relaxed">
             {maskedSentence.split('__________').map((part, idx, arr) => (
               <React.Fragment key={idx}>
                 <span>{part}</span>
                 {idx < arr.length - 1 && (
-                  <span className={`inline-block mx-2 px-4 py-1 rounded-xl border-2 font-mono text-base sm:text-xl transition-all ${
+                  <span className={`inline-block mx-2 px-4 py-1 rounded-2xl border-2 font-mono text-base sm:text-xl transition-all shadow-sm ${
                     isAnswerChecked
                       ? isCorrect
-                        ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 font-bold'
-                        : 'border-rose-500 bg-rose-500/20 text-rose-300 font-bold'
+                        ? 'border-emerald-400 bg-emerald-100 text-emerald-900 font-black'
+                        : 'border-rose-400 bg-rose-100 text-rose-900 font-black'
                       : selectedOption
-                        ? 'border-purple-500 bg-purple-500/20 text-purple-300 font-bold'
-                        : 'border-dashed border-slate-600 bg-slate-800 text-slate-400'
+                        ? 'border-purple-400 bg-purple-100 text-purple-900 font-black'
+                        : 'border-dashed border-slate-400 bg-white text-slate-400'
                   }`}>
                     {selectedOption || '???'}
                   </span>
@@ -253,8 +235,7 @@ export const ListeningLabExercise: React.FC = () => {
             ))}
           </div>
 
-          {/* English Meaning Hint */}
-          <p className="mt-3 text-sm text-slate-400 italic">
+          <p className="mt-3 text-sm text-slate-500 font-bold italic">
             "{currentItem.english}"
           </p>
         </div>
@@ -265,18 +246,18 @@ export const ListeningLabExercise: React.FC = () => {
             const isSelected = selectedOption === option;
             const isTarget = option.toLowerCase() === clozeTargetWord.toLowerCase();
 
-            let btnStyle = 'border-slate-800 bg-slate-900/70 hover:border-purple-500/40 hover:bg-slate-850 text-white';
+            let btnStyle = 'border-b-[5px] border-slate-300 bg-white text-slate-800 hover:bg-slate-50 shadow-md';
 
             if (isAnswerChecked) {
               if (isTarget) {
-                btnStyle = 'border-emerald-500 bg-emerald-950/40 text-emerald-300 shadow-md shadow-emerald-500/20';
+                btnStyle = 'border-b-[5px] border-[#46A302] bg-[#58CC02] text-white shadow-lg';
               } else if (isSelected && !isCorrect) {
-                btnStyle = 'border-rose-500 bg-rose-950/40 text-rose-300';
+                btnStyle = 'border-b-[5px] border-[#EA2B2B] bg-[#FF4B4B] text-white shadow-lg';
               } else {
-                btnStyle = 'border-slate-800/40 bg-slate-900/30 text-slate-500 opacity-60';
+                btnStyle = 'border-2 border-slate-200 bg-slate-100 text-slate-400 opacity-60';
               }
             } else if (isSelected) {
-              btnStyle = 'border-purple-500 bg-purple-950/40 text-purple-200 shadow-md shadow-purple-500/20';
+              btnStyle = 'border-b-[5px] border-[#1899D6] bg-[#1CB0F6] text-white shadow-lg ring-2 ring-sky-300';
             }
 
             return (
@@ -284,7 +265,7 @@ export const ListeningLabExercise: React.FC = () => {
                 key={idx}
                 onClick={() => handleSelectOption(option)}
                 disabled={isAnswerChecked}
-                className={`py-4 px-5 rounded-2xl border-2 text-base sm:text-lg font-bold text-center transition-all transform active:scale-98 ${btnStyle}`}
+                className={`py-4 px-5 rounded-2xl text-base sm:text-lg font-black text-center transition-all active:translate-y-1 active:border-b-0 cursor-pointer ${btnStyle}`}
               >
                 {option}
               </button>
@@ -294,25 +275,25 @@ export const ListeningLabExercise: React.FC = () => {
 
         {/* Verification Result Banner */}
         {isAnswerChecked && (
-          <div className={`p-4 rounded-2xl border mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn ${
+          <div className={`p-4 sm:p-5 rounded-3xl border-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn shadow-md ${
             isCorrect
-              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
-              : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+              ? 'bg-emerald-100 border-emerald-300 text-emerald-950'
+              : 'bg-rose-100 border-rose-300 text-rose-950'
           }`}>
             <div className="flex items-center gap-3">
               {isCorrect ? (
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0" />
               ) : (
-                <XCircle className="w-8 h-8 text-rose-400 shrink-0" />
+                <XCircle className="w-8 h-8 text-rose-600 shrink-0" />
               )}
               <div>
-                <p className="font-extrabold text-sm sm:text-base">
-                  {isCorrect ? 'Accurate Auditory Recognition! (+15 XP)' : 'Auditory Misinterpretation'}
+                <p className="font-black text-sm sm:text-base">
+                  {isCorrect ? '¡Reconocimiento Auditivo Correcto! (+15 XP)' : '¡Inténtalo de nuevo!'}
                 </p>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  The spoken word was <strong className="text-white underline">{clozeTargetWord}</strong>.
+                <p className="text-xs font-bold text-slate-700 mt-0.5">
+                  The spoken word was <strong className="text-slate-950 underline">{clozeTargetWord}</strong>.
                   {currentItem.pronunciationTip && (
-                    <span className="block text-[11px] text-slate-400 mt-0.5">
+                    <span className="block text-[11px] text-slate-600 mt-0.5 font-medium">
                       💡 Tip: {currentItem.pronunciationTip}
                     </span>
                   )}
@@ -322,7 +303,7 @@ export const ListeningLabExercise: React.FC = () => {
 
             <button
               onClick={handleNext}
-              className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-600/30 transition-all shrink-0"
+              className="px-6 py-3 rounded-2xl bg-[#58CC02] hover:bg-[#46A302] border-b-[5px] border-[#388E00] text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all active:translate-y-1 active:border-b-0 shrink-0 cursor-pointer"
             >
               <span>Next Phrase</span>
               <ArrowRight className="w-4 h-4" />
@@ -332,14 +313,14 @@ export const ListeningLabExercise: React.FC = () => {
 
         {/* Footer Action Bar */}
         {!isAnswerChecked && (
-          <div className="flex justify-end items-center pt-4 border-t border-slate-800">
+          <div className="flex justify-end items-center pt-4 border-t-2 border-slate-100">
             <button
               onClick={handleCheckAnswer}
               disabled={!selectedOption}
-              className={`px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-lg ${
+              className={`px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-md active:translate-y-1 active:border-b-0 ${
                 selectedOption
-                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30 cursor-pointer transform hover:scale-102'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  ? 'bg-[#1CB0F6] hover:bg-[#1899D6] border-b-[5px] border-[#1374A6] text-white cursor-pointer shadow-sky-500/25'
+                  : 'bg-slate-200 border-b-[5px] border-slate-300 text-slate-400 cursor-not-allowed'
               }`}
             >
               Verify Auditory Answer

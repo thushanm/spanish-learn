@@ -5,8 +5,9 @@ import { useApp } from '../context/AppContext';
 import { SPANISH_UNITS } from '../data/spanishData';
 import { SpanishWordPhrase } from '../types';
 import { speakSpanish } from '../utils/speech';
-import { useSoundEffects } from '../utils/useSoundEffects';
+import { useCartoonAudio, useSoundEffects } from '../utils/useSoundEffects';
 import { TactileButton } from './ui/TactileButton';
+import { CartoonMascot } from './CartoonMascot';
 import {
   ArrowRight,
   Check,
@@ -115,8 +116,8 @@ function createChallenge(item: SpanishWordPhrase, round: number): BuildChallenge
 }
 
 export const SentenceBuilderExercise: React.FC = () => {
-  const { stats, selectedUnitId, recordPracticeResult, addXP } = useApp();
-  const sounds = useSoundEffects(stats.soundEnabled);
+  const { stats, selectedUnitId, recordPracticeResult, addXP, triggerGameAction, consecutiveMistakes } = useApp();
+  const sounds = useCartoonAudio(stats.soundEnabled);
   const currentUnit = SPANISH_UNITS.find(unit => unit.id === selectedUnitId) || SPANISH_UNITS[0];
   const topicItems = currentUnit.items;
 
@@ -203,14 +204,14 @@ export const SentenceBuilderExercise: React.FC = () => {
 
   const addChip = (chip: WordChip) => {
     if (feedback !== 'idle') return;
-    sounds.playSnap();
+    sounds.playBubblePop();
     setAssembledChips(prev => [...prev, chip]);
     setAvailableChips(prev => prev.filter(c => c.id !== chip.id));
   };
 
   const removeChip = (chip: WordChip) => {
     if (feedback !== 'idle') return;
-    sounds.playSnap();
+    sounds.playBubblePop();
     setAvailableChips(prev => [...prev, chip]);
     setAssembledChips(prev => prev.filter(c => c.id !== chip.id));
   };
@@ -224,7 +225,9 @@ export const SentenceBuilderExercise: React.FC = () => {
       setFeedback('correct');
       const nextStreak = correctStreak + 1;
       setCorrectStreak(nextStreak);
+      triggerGameAction('correct');
       sounds.playCorrect(nextStreak);
+      sounds.shoutCartoonCheer();
       recordPracticeResult(currentUnit.id, 100, currentItem);
       setShowFloatingXP(true);
 
@@ -232,22 +235,27 @@ export const SentenceBuilderExercise: React.FC = () => {
       if (nextStreak % 3 === 0) {
         setPraise(PRAISE_LINES[(nextStreak / 3 - 1) % PRAISE_LINES.length]);
         confetti({
-          particleCount: 65,
-          spread: 60,
-          colors: ['#FFD700', '#F59E0B', '#10B981', '#EC4899'],
+          particleCount: 75,
+          spread: 70,
+          colors: ['#FFC800', '#58CC02', '#1CB0F6', '#FF6492'],
           origin: { x: 0.3, y: 0.65 }
         });
         confetti({
-          particleCount: 65,
-          spread: 60,
-          colors: ['#FFD700', '#F59E0B', '#10B981', '#EC4899'],
+          particleCount: 75,
+          spread: 70,
+          colors: ['#FFC800', '#58CC02', '#1CB0F6', '#FF6492'],
           origin: { x: 0.7, y: 0.65 }
         });
       }
     } else {
       setFeedback('incorrect');
       setCorrectStreak(0);
-      sounds.playIncorrect();
+      triggerGameAction('wrong');
+      if (consecutiveMistakes >= 1) {
+        sounds.playSadTrombone();
+      } else {
+        sounds.playCartoonWhistleDown();
+      }
       recordPracticeResult(currentUnit.id, 30, currentItem);
     }
   };
@@ -321,73 +329,56 @@ export const SentenceBuilderExercise: React.FC = () => {
   const progress = challenges.length ? ((questionIndex + 1) / challenges.length) * 100 : 0;
 
   return (
-    <div className="mobile-page mx-auto max-w-3xl select-none px-4 py-5 sm:py-8">
+    <div className="mobile-page mx-auto max-w-3xl select-none px-4 py-5 sm:py-8 space-y-4">
+      {/* Expressive Cartoon Mascot responding to your sentence build */}
+      <CartoonMascot compact />
+
       {/* Top Header Card */}
-      <div className="mb-4 rounded-[26px] border border-slate-800 bg-[#0B0F19]/90 p-4 shadow-xl sm:mb-6 sm:p-5 backdrop-blur-md">
+      <div className="rounded-[32px] border-4 border-white bg-white/95 p-5 shadow-[0_12px_0_rgba(0,0,0,0.08)] backdrop-blur-md text-slate-800">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white shadow-md">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#A855F7] text-white shadow-md border-b-4 border-[#8B2BE2]">
               <Puzzle className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-base font-black text-white">Build a Spanish sentence</h1>
+                <h1 className="truncate text-base font-black text-slate-900">Build a Spanish sentence</h1>
                 {correctStreak >= 2 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-black uppercase tracking-wider animate-bounce">
-                    <Flame className="w-3 h-3 fill-amber-400" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border-2 border-amber-300 text-[10px] font-black uppercase tracking-wider animate-bounce">
+                    <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     <span>{correctStreak}x Combo</span>
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-xs text-slate-400">{currentUnit.subtitle || currentUnit.title}</p>
+              <p className="mt-0.5 text-xs font-bold text-slate-500">{currentUnit.subtitle || currentUnit.title}</p>
             </div>
           </div>
-          <div className="shrink-0 rounded-xl bg-purple-500/10 border border-purple-400/20 px-2.5 py-1.5 text-right text-[10px] font-black uppercase tracking-wide text-purple-200">
+          <div className="shrink-0 rounded-2xl bg-purple-100 border-2 border-purple-300 px-3 py-1.5 text-right text-[10px] font-black uppercase tracking-wide text-purple-900 shadow-sm">
             <span className="block">Pack {deckNumber}/{totalDecks}</span>
-            <span className="text-purple-300/70">Round {roundNumber}/{REPEAT_ROUNDS}</span>
+            <span className="text-purple-700">Round {roundNumber}/{REPEAT_ROUNDS}</span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-900 border border-slate-800 p-0.5">
+        <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200 border border-slate-300 p-0.5">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-purple-500 via-indigo-400 to-cyan-400"
+            className="h-full rounded-full bg-gradient-to-r from-purple-500 via-sky-400 to-emerald-400"
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           />
         </div>
       </div>
 
-      {/* Royal Praise Burst Banner */}
-      <AnimatePresence>
-        {praise && (
-          <motion.div
-            initial={{ opacity: 0, y: 14, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="mb-4 flex items-center gap-3 rounded-3xl border border-amber-300/50 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 p-4 text-slate-950 shadow-xl shadow-amber-500/25 animate-royal-glow"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/60 text-2xl shadow-inner animate-float-gently">
-              👸
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">👑 Elogio Real de la Princesa</p>
-              <p className="text-sm sm:text-base font-black leading-tight">{praise}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main Assembly Card (with screen-shake on wrong answer) */}
       <motion.main
         animate={feedback === 'incorrect' ? { x: [-12, 12, -8, 8, -4, 4, 0] } : {}}
         transition={{ duration: 0.45 }}
-        className={`relative overflow-hidden rounded-[30px] border bg-[#0B0F19] p-5 shadow-2xl transition-all sm:p-8 ${
+        className={`relative overflow-hidden rounded-[32px] border-4 bg-white/95 p-5 shadow-[0_12px_0_rgba(0,0,0,0.08)] transition-all sm:p-8 text-slate-800 ${
           feedback === 'correct'
-            ? 'border-emerald-400/80 ring-4 ring-emerald-400/20'
+            ? 'border-emerald-400 ring-4 ring-emerald-200'
             : feedback === 'incorrect'
-            ? 'border-rose-500/80 ring-4 ring-rose-500/20'
-            : 'border-slate-800'
+            ? 'border-rose-400 ring-4 ring-rose-200'
+            : 'border-white'
         }`}
       >
         {/* Floating XP Score Popup */}
@@ -406,16 +397,16 @@ export const SentenceBuilderExercise: React.FC = () => {
         </AnimatePresence>
 
         <div className="relative text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/20 bg-purple-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-purple-200">
+          <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-purple-300 bg-purple-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-purple-900">
             {currentChallenge.style === 'listen' ? <Volume2 className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
             {currentChallenge.helper}
           </span>
-          <h2 className="mx-auto mt-4 max-w-2xl text-xl font-black leading-snug text-white sm:text-3xl">
+          <h2 className="mx-auto mt-4 max-w-2xl text-xl font-black leading-snug text-slate-900 sm:text-3xl">
             “{currentChallenge.prompt}”
           </h2>
           <button
             onClick={playChallengeAudio}
-            className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-2 text-xs font-black text-cyan-200 transition-colors hover:bg-cyan-400/20 cursor-pointer"
+            className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-2xl border-2 border-sky-300 bg-sky-100 px-4 py-2 text-xs font-black text-sky-800 transition-colors hover:bg-sky-200 cursor-pointer shadow-sm"
           >
             <Volume2 className="h-4 w-4" />
             <span>Escuchar en Español</span>
@@ -428,12 +419,12 @@ export const SentenceBuilderExercise: React.FC = () => {
             Tu frase en español
           </p>
           <div
-            className={`flex min-h-24 flex-wrap items-center justify-center gap-2 rounded-3xl border-2 border-dashed p-3 sm:min-h-28 sm:p-4 transition-colors ${
+            className={`flex min-h-24 flex-wrap items-center justify-center gap-2.5 rounded-3xl border-3 border-dashed p-3 sm:min-h-28 sm:p-4 transition-colors ${
               feedback === 'correct'
-                ? 'border-emerald-400/40 bg-emerald-500/5'
+                ? 'border-emerald-400 bg-emerald-50'
                 : feedback === 'incorrect'
-                ? 'border-rose-400/40 bg-rose-500/5'
-                : 'border-slate-800 bg-[#070A0F]'
+                ? 'border-rose-400 bg-rose-50'
+                : 'border-sky-300 bg-sky-50/70'
             }`}
           >
             {assembledChips.length ? (
@@ -441,16 +432,16 @@ export const SentenceBuilderExercise: React.FC = () => {
                 <motion.button
                   key={chip.id}
                   layoutId={chip.id}
-                  transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                  transition={{ type: 'spring', stiffness: 440, damping: 25 }}
                   onClick={() => removeChip(chip)}
                   disabled={isAnswered}
-                  className="rounded-2xl border-b-4 border-indigo-800 bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-black text-white shadow-md active:translate-y-1 active:border-b-0 cursor-pointer"
+                  className="rounded-2xl border-b-[5px] border-[#1899D6] bg-[#1CB0F6] px-4 py-2.5 text-sm font-black text-white shadow-md active:translate-y-1 active:border-b-0 cursor-pointer"
                 >
                   {chip.text}
                 </motion.button>
               ))
             ) : (
-              <span className="px-4 text-center text-xs font-semibold text-slate-500">
+              <span className="px-4 text-center text-xs font-bold text-slate-400">
                 Toca las palabras de abajo para armar la respuesta
               </span>
             )}
@@ -467,10 +458,10 @@ export const SentenceBuilderExercise: React.FC = () => {
               <motion.button
                 key={chip.id}
                 layoutId={chip.id}
-                transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                transition={{ type: 'spring', stiffness: 440, damping: 25 }}
                 onClick={() => addChip(chip)}
                 disabled={isAnswered}
-                className="rounded-2xl border-b-4 border-slate-900 bg-slate-800 px-4 py-2.5 text-sm font-black text-slate-100 shadow-md hover:border-indigo-600 hover:bg-slate-700 active:translate-y-1 active:border-b-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                className="rounded-2xl border-b-[5px] border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-800 shadow-md hover:bg-slate-50 active:translate-y-1 active:border-b-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {chip.text}
               </motion.button>
@@ -485,18 +476,18 @@ export const SentenceBuilderExercise: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="relative mt-6 flex items-start gap-3 rounded-3xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-emerald-100"
+              className="relative mt-6 flex items-start gap-3 rounded-3xl border-3 border-emerald-300 bg-emerald-100 p-4 text-emerald-950 shadow-sm"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-slate-950 shadow-md">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#58CC02] text-white shadow-md">
                 <CheckCircle2 className="h-6 w-6 stroke-[3]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-black text-white">¡Correcto! Excelente sintaxis.</p>
-                <p className="mt-1 text-sm font-bold text-emerald-200">{currentChallenge.targetSpanish}</p>
+                <p className="font-black text-emerald-950 text-base">¡Correcto! ¡Súper sintaxis!</p>
+                <p className="mt-1 text-sm font-black text-emerald-800">{currentChallenge.targetSpanish}</p>
               </div>
               <button
                 onClick={playChallengeAudio}
-                className="rounded-xl bg-emerald-400/20 p-2.5 text-emerald-200 hover:bg-emerald-400/30"
+                className="rounded-xl bg-emerald-200 p-2.5 text-emerald-900 hover:bg-emerald-300 cursor-pointer"
               >
                 <Volume2 className="h-4 w-4" />
               </button>
@@ -509,24 +500,24 @@ export const SentenceBuilderExercise: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="relative mt-6 rounded-3xl border border-rose-400/50 bg-rose-500/10 p-4 text-left"
+              className="relative mt-6 rounded-3xl border-3 border-rose-300 bg-rose-100 p-4 text-left shadow-sm"
             >
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-md">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FF4B4B] text-white shadow-md">
                   <X className="h-6 w-6 stroke-[3]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-black text-white">Casi — aquí tienes la respuesta correcta:</p>
-                  <p className="mt-1.5 text-base font-black text-rose-200 sm:text-lg">
+                  <p className="font-black text-rose-950 text-base">Casi — aquí tienes la respuesta correcta:</p>
+                  <p className="mt-1.5 text-base font-black text-rose-900 sm:text-lg">
                     {currentChallenge.targetSpanish}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-300">
-                    No te preocupes. Esta frase se repetirá en una ronda posterior para que la domines.
+                  <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">
+                    ¡No te rindas! Esta frase se repetirá en una ronda posterior para que la domines.
                   </p>
                 </div>
                 <button
                   onClick={playChallengeAudio}
-                  className="rounded-xl bg-rose-400/20 p-2.5 text-rose-200 hover:bg-rose-400/30"
+                  className="rounded-xl bg-rose-200 p-2.5 text-rose-900 hover:bg-rose-300 cursor-pointer"
                 >
                   <Volume2 className="h-4 w-4" />
                 </button>
@@ -536,11 +527,11 @@ export const SentenceBuilderExercise: React.FC = () => {
         </AnimatePresence>
 
         {/* Action Controls */}
-        <div className="relative mt-6 flex items-center justify-between gap-3 border-t border-slate-800/80 pt-5">
+        <div className="relative mt-6 flex items-center justify-between gap-3 border-t-2 border-slate-200 pt-5">
           <button
             onClick={resetTiles}
             disabled={isAnswered || assembledChips.length === 0}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 cursor-pointer"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-black text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-35 cursor-pointer"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Resetear</span>
@@ -548,7 +539,8 @@ export const SentenceBuilderExercise: React.FC = () => {
 
           {isAnswered ? (
             <TactileButton
-              variant={feedback === 'correct' ? 'emerald' : 'danger'}
+              variant={feedback === 'correct' ? 'candy-green' : 'coral-red'}
+              size="md"
               onClick={continueChallenge}
             >
               <span>Continuar</span>
@@ -556,7 +548,8 @@ export const SentenceBuilderExercise: React.FC = () => {
             </TactileButton>
           ) : (
             <TactileButton
-              variant="amethyst"
+              variant="sun-yellow"
+              size="md"
               onClick={checkSentence}
               disabled={assembledChips.length === 0}
             >
