@@ -11,24 +11,24 @@ interface GlassCardProps extends HTMLMotionProps<'div'> {
 
 const ACCENT_STYLES: Record<GlowAccent, { border: string; shadow: string }> = {
   gold: {
-    border: 'border-amber-300',
-    shadow: 'shadow-[0_8px_0_rgba(251,191,36,0.5)]'
+    border: 'border-amber-400/40',
+    shadow: 'shadow-[0_0_24px_rgba(251,191,36,0.18)]'
   },
   emerald: {
-    border: 'border-emerald-300',
-    shadow: 'shadow-[0_8px_0_rgba(110,231,183,0.5)]'
+    border: 'border-emerald-400/40',
+    shadow: 'shadow-[0_0_24px_rgba(88,204,2,0.18)]'
   },
   amethyst: {
-    border: 'border-purple-300',
-    shadow: 'shadow-[0_8px_0_rgba(216,180,254,0.5)]'
+    border: 'border-purple-400/40',
+    shadow: 'shadow-[0_0_24px_rgba(168,85,247,0.18)]'
   },
   cyan: {
-    border: 'border-sky-300',
-    shadow: 'shadow-[0_8px_0_rgba(125,211,252,0.5)]'
+    border: 'border-sky-400/40',
+    shadow: 'shadow-[0_0_24px_rgba(28,176,246,0.18)]'
   },
   none: {
-    border: 'border-white',
-    shadow: 'shadow-[0_8px_0_rgba(0,0,0,0.08)]'
+    border: 'border-slate-700/60',
+    shadow: 'shadow-[0_12px_32px_rgba(0,0,0,0.5)]'
   }
 };
 
@@ -44,7 +44,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   return (
     <motion.div
       whileHover={interactive ? { y: -3, scale: 1.01, transition: { duration: 0.15 } } : undefined}
-      className={`relative overflow-hidden rounded-[28px] sm:rounded-[32px] border-4 bg-white/95 backdrop-blur-xl p-5 sm:p-7 text-slate-800 ${border} ${shadow} shadow-2xl ${className}`}
+      className={`relative overflow-hidden rounded-[28px] sm:rounded-[32px] border-2 bg-[#121927]/90 backdrop-blur-xl p-5 sm:p-7 text-slate-100 ${border} ${shadow} ${className}`}
       {...props}
     >
       {children}

@@ -61,6 +61,7 @@ const DEFAULT_STATS: UserStats = {
 };
 
 const STORAGE_KEY = 'cortex_spanish_user_stats_v4';
+const NAV_STATE_KEY = 'jtm_spanish_nav_state_v1';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -75,29 +76,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const masteredItemIds = hasMasteryData
           ? parsed.masteredItemIds.filter((id: unknown) => typeof id === 'string' && knownItemIds.has(id))
           : [];
-        const completedUnits = SPANISH_UNITS
-          .filter(unit => unit.items.every(item => masteredItemIds.includes(item.id)))
-          .map(unit => unit.id);
-        const wordsPracticedCount = hasMasteryData && typeof parsed.wordsPracticedCount === 'number'
+        const completedUnits = Array.isArray(parsed.completedUnits) && parsed.completedUnits.length > 0
+          ? parsed.completedUnits
+          : SPANISH_UNITS
+              .filter(unit => unit.items.every(item => masteredItemIds.includes(item.id)))
+              .map(unit => unit.id);
+        const wordsPracticedCount = typeof parsed.wordsPracticedCount === 'number'
           ? parsed.wordsPracticedCount
           : 0;
-        const hasRecordedAttempts = wordsPracticedCount > 0;
         return {
           ...DEFAULT_STATS,
           ...parsed,
-          // Earlier builds marked whole lessons complete after one phrase. Their progress is not reliable,
-          // so a learner begins with a clean, honest record once this tracker is introduced.
-          xp: hasMasteryData ? parsed.xp : 0,
-          streak: hasMasteryData ? parsed.streak : 0,
-          lastPracticeDate: hasMasteryData ? parsed.lastPracticeDate : '',
+          // Always preserve user points, XP, and streak reliably across all reloads and devices
+          xp: typeof parsed.xp === 'number' ? parsed.xp : 0,
+          streak: typeof parsed.streak === 'number' ? parsed.streak : 0,
+          lastPracticeDate: typeof parsed.lastPracticeDate === 'string' ? parsed.lastPracticeDate : '',
           wordsPracticedCount,
-          wordsLearnedCount: masteredItemIds.length,
+          wordsLearnedCount: typeof parsed.wordsLearnedCount === 'number' ? parsed.wordsLearnedCount : masteredItemIds.length,
           masteredItemIds,
           completedUnits,
-          mistakeWordList: hasMasteryData && Array.isArray(parsed.mistakeWordList) ? parsed.mistakeWordList : [],
-          mistakeWordsCount: hasMasteryData && Array.isArray(parsed.mistakeWordList) ? parsed.mistakeWordList.length : 0,
-          accuracyHistory: hasRecordedAttempts && Array.isArray(parsed.accuracyHistory) ? parsed.accuracyHistory : DEFAULT_STATS.accuracyHistory,
-          averageAccuracy: hasRecordedAttempts && typeof parsed.averageAccuracy === 'number' ? parsed.averageAccuracy : 0
+          mistakeWordList: Array.isArray(parsed.mistakeWordList) ? parsed.mistakeWordList : [],
+          mistakeWordsCount: Array.isArray(parsed.mistakeWordList) ? parsed.mistakeWordList.length : 0,
+          accuracyHistory: Array.isArray(parsed.accuracyHistory) && parsed.accuracyHistory.length > 0 ? parsed.accuracyHistory : DEFAULT_STATS.accuracyHistory,
+          averageAccuracy: typeof parsed.averageAccuracy === 'number' ? parsed.averageAccuracy : 0
         };
       }
     } catch (e) {
@@ -106,8 +107,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return DEFAULT_STATS;
   });
 
-  const [selectedUnitId, setSelectedUnitId] = useState<string | null>('unit-1');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('roadmap');
+  // Persistent navigation state: user returns to exact tab and unit on reload
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem(NAV_STATE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.selectedUnitId === 'string' && parsed.selectedUnitId) {
+          return parsed.selectedUnitId;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read nav state', e);
+    }
+    return 'unit-1';
+  });
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    try {
+      const saved = localStorage.getItem(NAV_STATE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.activeTab === 'string' && parsed.activeTab) {
+          return parsed.activeTab as ActiveTab;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read nav state', e);
+    }
+    return 'roadmap';
+  });
+
+  // Automatically save current tab and selected unit on every switch
+  useEffect(() => {
+    try {
+      localStorage.setItem(NAV_STATE_KEY, JSON.stringify({ activeTab, selectedUnitId }));
+    } catch (e) {
+      console.warn('Could not save nav state to localStorage', e);
+    }
+  }, [activeTab, selectedUnitId]);
 
   // Cartoon Arcade Mood & Mascot State
   const [comboStreak, setComboStreak] = useState(0);

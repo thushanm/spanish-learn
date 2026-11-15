@@ -67,10 +67,10 @@ const VARIANT_STYLES: Record<ButtonVariant, { bg: string; border: string; text: 
     shadow: 'shadow-[0_6px_0_rgba(234,43,43,0.4)]'
   },
   'cloud-white': {
-    bg: 'bg-white hover:bg-slate-50',
-    border: 'border-b-[6px] border-slate-300 active:border-b-0',
-    text: 'text-slate-800 font-black',
-    shadow: 'shadow-[0_6px_0_rgba(203,213,225,0.6)]'
+    bg: 'bg-slate-800 hover:bg-slate-750',
+    border: 'border-b-[6px] border-slate-950 active:border-b-0',
+    text: 'text-slate-100 font-black',
+    shadow: 'shadow-[0_6px_0_rgba(2,6,23,0.7)]'
   },
   // Legacy aliases seamlessly mapped to chunky arcade jelly style
   gold: {
@@ -104,10 +104,10 @@ const VARIANT_STYLES: Record<ButtonVariant, { bg: string; border: string; text: 
     shadow: 'shadow-[0_6px_0_rgba(234,43,43,0.4)]'
   },
   slate: {
-    bg: 'bg-slate-200 hover:bg-slate-300',
-    border: 'border-b-[6px] border-slate-400 active:border-b-0',
-    text: 'text-slate-800 font-bold',
-    shadow: 'shadow-[0_6px_0_rgba(148,163,184,0.4)]'
+    bg: 'bg-slate-800/90 hover:bg-slate-700',
+    border: 'border-b-[6px] border-slate-950 active:border-b-0',
+    text: 'text-slate-200 font-bold',
+    shadow: 'shadow-[0_6px_0_rgba(2,6,23,0.7)]'
   }
 };
 

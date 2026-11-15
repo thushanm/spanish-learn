@@ -66,8 +66,38 @@ export const AcousticSpeechStudio: React.FC = () => {
   const currentUnit = SPANISH_UNITS[safeUnitIndex] || SPANISH_UNITS[0];
   const items = currentUnit.items;
 
-  // Regular practice progression index
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Regular practice progression index - restored from localStorage
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`jtm_speak_pos_${currentUnit.id}`);
+      if (saved) {
+        const idx = parseInt(saved, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < items.length) return idx;
+      }
+    } catch {}
+    return 0;
+  });
+
+  // Automatically save speaking phrase position
+  useEffect(() => {
+    try {
+      localStorage.setItem(`jtm_speak_pos_${currentUnit.id}`, currentIndex.toString());
+    } catch {}
+  }, [currentUnit.id, currentIndex]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`jtm_speak_pos_${currentUnit.id}`);
+      if (saved) {
+        const idx = parseInt(saved, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < items.length) {
+          setCurrentIndex(idx);
+          return;
+        }
+      }
+    } catch {}
+    setCurrentIndex(0);
+  }, [currentUnit.id]);
 
   // Smart Spaced Repetition Review Queue (missed phrases in current unit session)
   const [missedQueue, setMissedQueue] = useState<SpanishWordPhrase[]>([]);
@@ -523,9 +553,9 @@ export const AcousticSpeechStudio: React.FC = () => {
             playClickSound(stats.soundEnabled);
             setActiveTab('roadmap');
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border-2 border-slate-200 text-xs font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm group cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-800 border-2 border-slate-700 text-xs font-black text-slate-200 hover:bg-slate-750 transition-all shadow-sm group cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 text-sky-500 group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft className="w-4 h-4 text-sky-400 group-hover:-translate-x-1 transition-transform" />
           <span className="hidden sm:inline">Back to Today</span>
           <span className="sm:hidden">Today</span>
         </button>
@@ -536,12 +566,12 @@ export const AcousticSpeechStudio: React.FC = () => {
             onClick={() => updateSettings({ autoAdvance: !stats.autoAdvance })}
             className={`px-3 py-2 rounded-2xl border-2 font-black flex items-center gap-1.5 transition-colors cursor-pointer ${
               stats.autoAdvance
-                ? 'bg-amber-100 border-amber-300 text-amber-800 shadow-sm'
-                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 shadow-sm'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'
             }`}
             title="Automatically advance to the next phrase and next topic upon successful pronunciation"
           >
-            <Zap className={`w-3.5 h-3.5 ${stats.autoAdvance ? 'text-amber-500 fill-amber-500' : ''}`} />
+            <Zap className={`w-3.5 h-3.5 ${stats.autoAdvance ? 'text-amber-400 fill-amber-400' : ''}`} />
             <span className="hidden sm:inline">Auto-Flow: {stats.autoAdvance ? 'ON' : 'OFF'}</span>
             <span className="sm:hidden">Auto</span>
           </button>
@@ -549,34 +579,34 @@ export const AcousticSpeechStudio: React.FC = () => {
       </div>
 
       {/* Unit Context & Auto-Progression Status Header */}
-      <div className="bg-white/95 p-4 sm:p-5 rounded-[32px] border-4 border-white shadow-[0_12px_0_rgba(0,0,0,0.08)] space-y-3 text-slate-800">
+      <div className="bg-[#121927]/90 p-4 sm:p-5 rounded-[28px] sm:rounded-[32px] border-2 border-slate-700/60 shadow-xl space-y-3 text-slate-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border-2 border-sky-300">
+              <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40">
                 {currentUnit.level} • Topic {safeUnitIndex + 1} of {SPANISH_UNITS.length}
               </span>
 
               {isReviewQueueActive ? (
-                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border-2 border-amber-300 flex items-center gap-1 animate-pulse">
+                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 animate-pulse">
                   <RotateCcw className="w-3 h-3" />
                   <span>Review Queue ({reviewQueueIndex + 1} of {missedQueue.length})</span>
                 </span>
               ) : (
-                <span className="text-xs font-bold text-slate-500">
+                <span className="text-xs font-bold text-slate-400">
                   Phrase {currentIndex + 1} of {items.length}
                 </span>
               )}
 
               {missedQueue.length > 0 && !isReviewQueueActive && (
-                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
                   {missedQueue.length} queued for end-review
                 </span>
               )}
             </div>
 
-            <h2 className="text-base sm:text-xl font-black text-slate-900 leading-snug">
-              {currentUnit.title} <span className="hidden sm:inline text-slate-500 font-bold">— {currentUnit.subtitle}</span>
+            <h2 className="text-base sm:text-xl font-black text-white leading-snug">
+              {currentUnit.title} <span className="hidden sm:inline text-slate-400 font-bold">— {currentUnit.subtitle}</span>
             </h2>
           </div>
 
@@ -588,7 +618,7 @@ export const AcousticSpeechStudio: React.FC = () => {
                 setSelectedUnitId(e.target.value);
                 setCurrentIndex(0);
               }}
-              className="w-full sm:w-auto bg-slate-50 border-2 border-slate-200 text-xs font-black text-slate-800 rounded-2xl px-3 py-2 outline-none focus:border-sky-400 cursor-pointer sm:max-w-[200px] truncate shadow-sm"
+              className="w-full sm:w-auto bg-slate-900 border-2 border-slate-700 text-xs font-black text-slate-200 rounded-2xl px-3 py-2 outline-none focus:border-sky-400 cursor-pointer sm:max-w-[200px] truncate shadow-sm"
               title="Switch curriculum topic"
             >
               {SPANISH_UNITS.map((u, idx) => (
@@ -601,7 +631,7 @@ export const AcousticSpeechStudio: React.FC = () => {
         </div>
 
         {/* Progress Bar for the Unit */}
-        <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden border border-slate-300 p-0.5">
+        <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700 p-0.5">
           <div
             className={`h-full transition-all duration-300 rounded-full ${
               isReviewQueueActive
@@ -621,11 +651,11 @@ export const AcousticSpeechStudio: React.FC = () => {
 
       {/* Review Queue Banner if in Review Mode */}
       {isReviewQueueActive && (
-        <div className="p-4 rounded-3xl bg-amber-100 border-3 border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3 shadow-md">
+        <div className="p-4 rounded-3xl bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-2.5">
-            <RotateCcw className="w-5 h-5 text-amber-600 shrink-0 animate-spin" style={{ animationDuration: '6s' }} />
+            <RotateCcw className="w-5 h-5 text-amber-400 shrink-0 animate-spin" style={{ animationDuration: '6s' }} />
             <div>
-              <strong className="text-amber-950 block font-black text-sm">End-of-Topic Reinforcement Round</strong>
+              <strong className="text-amber-100 block font-black text-sm">End-of-Topic Reinforcement Round</strong>
               <span className="font-bold">
                 Master the phrases you struggled with earlier ({missedQueue.length} remaining) to complete this topic!
               </span>
@@ -635,16 +665,16 @@ export const AcousticSpeechStudio: React.FC = () => {
       )}
 
       {/* Main Target Card */}
-      <div className="mobile-speaking-card relative rounded-[32px] border-4 border-white bg-white/95 p-5 sm:p-10 shadow-[0_12px_0_rgba(0,0,0,0.08)] space-y-5 sm:space-y-6 overflow-hidden text-slate-800">
+      <div className="mobile-speaking-card relative rounded-[28px] sm:rounded-[32px] border-2 border-slate-700/60 bg-[#121927]/90 backdrop-blur-xl p-5 sm:p-10 shadow-xl space-y-5 sm:space-y-6 overflow-hidden text-slate-100">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-emerald-100 border-2 border-emerald-300 text-[10px] sm:text-[11px] font-black text-emerald-800">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-[10px] sm:text-[11px] font-black text-emerald-300">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Voice Challenge · 75% to pass</span>
           </div>
 
           {currentItem.filmReference && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-800 text-xs font-black shadow-sm">
-              <Film className="w-3.5 h-3.5 text-rose-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-black shadow-sm">
+              <Film className="w-3.5 h-3.5 text-rose-400" />
               <span>{currentItem.filmReference}</span>
             </div>
           )}
@@ -652,30 +682,30 @@ export const AcousticSpeechStudio: React.FC = () => {
 
         {/* Target Phrase Typography */}
         <div className="text-center space-y-3">
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight break-words">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight break-words">
             {currentItem.spanish}
           </h1>
 
           {/* Phonetic Syllable Stress Breakdown */}
           {showPhoneticBreakdown && (
-            <div className="inline-flex max-w-full items-center gap-2 bg-amber-50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border-2 border-amber-200 font-mono text-xs sm:text-base text-amber-800 font-black overflow-x-auto">
+            <div className="inline-flex max-w-full items-center gap-2 bg-amber-500/15 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border-2 border-amber-500/30 font-mono text-xs sm:text-base text-amber-300 font-black overflow-x-auto">
               <span>{currentItem.phonetic}</span>
             </div>
           )}
 
-          <p className="text-base sm:text-xl text-slate-600 font-black">
+          <p className="text-base sm:text-xl text-slate-300 font-bold">
             "{currentItem.english}"
           </p>
 
           {/* Creative Mnemonic Memory Anchor */}
           {currentItem.mnemonic && (
-            <div className="max-w-xl mx-auto p-3.5 rounded-2xl bg-purple-50 border-2 border-purple-200 text-left flex items-start gap-3 mt-3 shadow-sm">
-              <Lightbulb className="w-4 h-4 text-purple-600 shrink-0 mt-0.5 animate-pulse" />
+            <div className="max-w-xl mx-auto p-3.5 rounded-2xl bg-purple-950/50 border border-purple-500/30 text-left flex items-start gap-3 mt-3 shadow-sm">
+              <Lightbulb className="w-4 h-4 text-purple-400 shrink-0 mt-0.5 animate-pulse" />
               <div>
-                <span className="text-[10px] uppercase font-black text-purple-800 block tracking-wider">
+                <span className="text-[10px] uppercase font-black text-purple-300 block tracking-wider">
                   Mnemonic Memory Anchor:
                 </span>
-                <p className="text-xs text-slate-700 mt-0.5 font-bold leading-relaxed">
+                <p className="text-xs text-purple-200 mt-0.5 font-bold leading-relaxed">
                   {currentItem.mnemonic}
                 </p>
               </div>
@@ -685,10 +715,10 @@ export const AcousticSpeechStudio: React.FC = () => {
 
           {/* Cultural & Real-World Usage */}
           {currentItem.culturalContext && (
-            <div className="max-w-xl mx-auto p-3.5 rounded-2xl bg-sky-50 border-2 border-sky-200 text-left flex items-start gap-2.5 shadow-sm">
-              <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-slate-700 leading-relaxed font-bold">
-                <strong className="text-slate-900 font-black">Context:</strong> {currentItem.culturalContext}
+            <div className="max-w-xl mx-auto p-3.5 rounded-2xl bg-sky-950/50 border border-sky-500/30 text-left flex items-start gap-2.5 shadow-sm">
+              <Globe className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-slate-300 leading-relaxed font-bold">
+                <strong className="text-white font-black">Context:</strong> {currentItem.culturalContext}
               </p>
             </div>
           )}
@@ -699,8 +729,8 @@ export const AcousticSpeechStudio: React.FC = () => {
             onClick={() => playNativeAudio(stats.speechRate)}
             className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm border-2 transition-all cursor-pointer shadow-sm ${
               isPlayingAudio
-                ? 'bg-sky-400 border-sky-600 text-white scale-105'
-                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
+                ? 'bg-sky-500 border-sky-400 text-white scale-105'
+                : 'bg-slate-850 hover:bg-slate-800 border-slate-700 text-slate-200'
             }`}
           >
             <Volume2 className="w-4 h-4 text-sky-600 shrink-0" />
@@ -1024,10 +1054,10 @@ export const AcousticSpeechStudio: React.FC = () => {
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className={`p-6 rounded-3xl border-3 transition-all space-y-4 shadow-md ${
+            className={`p-6 rounded-3xl border-2 transition-all space-y-4 shadow-xl ${
               scoreResult.score >= 75
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
-                : 'bg-rose-50 border-rose-300 text-rose-950'
+                ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-100'
+                : 'bg-rose-950/60 border-rose-500/50 text-rose-100'
             }`}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
@@ -1040,7 +1070,7 @@ export const AcousticSpeechStudio: React.FC = () => {
                       cx="22"
                       cy="22"
                       r="18"
-                      className="text-slate-200"
+                      className="text-slate-800"
                       strokeWidth="4"
                       stroke="currentColor"
                       fill="transparent"
@@ -1074,32 +1104,32 @@ export const AcousticSpeechStudio: React.FC = () => {
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: 0.2, type: 'spring', stiffness: 400 }}
                       className={`text-lg font-black tracking-tight leading-none ${
-                        scoreResult.score >= 75 ? 'text-emerald-900' : 'text-rose-900'
+                        scoreResult.score >= 75 ? 'text-emerald-300' : 'text-rose-300'
                       }`}
                     >
                       {scoreResult.score}%
                     </motion.span>
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 mt-0.5">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mt-0.5">
                       {scoreResult.score >= 75 ? '¡Genial!' : 'Casi'}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
                     {scoreResult.score >= 75 ? (
                       <>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         <span>¡Pronunciación Aprobada!</span>
                       </>
                     ) : (
                       <>
-                        <AlertCircle className="w-5 h-5 text-rose-600" />
+                        <AlertCircle className="w-5 h-5 text-rose-400" />
                         <span>Buen intento · Vamos a ajustar</span>
                       </>
                     )}
                   </h3>
-                  <p className="text-xs font-bold text-slate-600 mt-0.5">
+                  <p className="text-xs font-bold text-slate-300 mt-0.5">
                     {scoreResult.feedbackText}
                   </p>
                 </div>
@@ -1107,24 +1137,24 @@ export const AcousticSpeechStudio: React.FC = () => {
 
               {/* What was heard vs expected */}
               {scoreResult.rawTranscript && (
-                <div className="text-xs bg-white p-3.5 rounded-2xl border-2 border-slate-200 text-slate-800 shadow-sm">
+                <div className="text-xs bg-slate-900/90 p-3.5 rounded-2xl border-2 border-slate-700/80 text-slate-200 shadow-inner">
                   <span className="text-slate-400 block text-[10px] uppercase font-black tracking-wider">What was heard:</span>
-                  <span className="font-mono font-black text-amber-700 text-sm">"{scoreResult.rawTranscript}"</span>
+                  <span className="font-mono font-black text-amber-300 text-sm">"{scoreResult.rawTranscript}"</span>
                 </div>
               )}
             </div>
 
             {/* Word by word breakdown */}
-            <div className="pt-2 border-t-2 border-slate-200/80 space-y-2">
-              <span className="text-[11px] font-black text-slate-600 uppercase">Target Word Alignment:</span>
+            <div className="pt-2 border-t border-slate-800 space-y-2">
+              <span className="text-[11px] font-black text-slate-400 uppercase">Target Word Alignment:</span>
               <div className="flex flex-wrap gap-2">
                 {scoreResult.wordMatches.map((w, idx) => (
                   <span
                     key={idx}
-                    className={`px-3 py-1 rounded-xl text-xs font-black border-2 ${
+                    className={`px-3 py-1 rounded-xl text-xs font-black border ${
                       w.match
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                        : 'bg-rose-100 text-rose-900 border-rose-300'
+                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                        : 'bg-rose-950/60 text-rose-300 border-rose-500/40'
                     }`}
                   >
                     {w.match ? '✓ ' : '✗ '}

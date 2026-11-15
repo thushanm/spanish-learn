@@ -29,7 +29,38 @@ export const ListeningLabExercise: React.FC = () => {
   const currentUnit = SPANISH_UNITS.find(u => u.id === selectedUnitId) || SPANISH_UNITS[0];
   const items = currentUnit.items;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Regular listening progression index - restored from localStorage
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`jtm_listen_pos_${currentUnit.id}`);
+      if (saved) {
+        const idx = parseInt(saved, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < items.length) return idx;
+      }
+    } catch {}
+    return 0;
+  });
+
+  // Automatically save listening phrase position
+  useEffect(() => {
+    try {
+      localStorage.setItem(`jtm_listen_pos_${currentUnit.id}`, currentIndex.toString());
+    } catch {}
+  }, [currentUnit.id, currentIndex]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`jtm_listen_pos_${currentUnit.id}`);
+      if (saved) {
+        const idx = parseInt(saved, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < items.length) {
+          setCurrentIndex(idx);
+          return;
+        }
+      }
+    } catch {}
+    setCurrentIndex(0);
+  }, [currentUnit.id]);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -148,19 +179,19 @@ export const ListeningLabExercise: React.FC = () => {
   return (
     <div className="mobile-page max-w-4xl mx-auto px-4 py-5 sm:py-8 space-y-4">
       {/* Top Header Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[32px] border-4 border-white bg-white/95 shadow-[0_12px_0_rgba(0,0,0,0.08)] text-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[28px] sm:rounded-[32px] border-2 border-slate-700/60 bg-[#121927]/90 shadow-xl text-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 border-2 border-purple-300 flex items-center justify-center text-purple-600 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-sm">
             <Headphones className="w-6 h-6 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-slate-900">Acoustic Audio Lab</h1>
-              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border-2 border-purple-300 uppercase">
+              <h1 className="text-xl font-black text-white">Acoustic Audio Lab</h1>
+              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-purple-950/60 text-purple-300 border border-purple-500/40 uppercase">
                 Auditory Cloze
               </span>
             </div>
-            <p className="text-xs font-bold text-slate-500 mt-0.5">
+            <p className="text-xs font-bold text-slate-400 mt-0.5">
               Listen to native Spanish pronunciation and train your auditory recognition.
             </p>
           </div>
@@ -168,18 +199,18 @@ export const ListeningLabExercise: React.FC = () => {
 
         {/* Progress & Score */}
         <div className="flex items-center gap-2">
-          <div className="px-3.5 py-1.5 rounded-2xl bg-slate-100 border-2 border-slate-200 text-xs text-slate-700 font-black">
-            Item <span className="text-purple-600">{currentIndex + 1}</span> of {items.length}
+          <div className="px-3.5 py-1.5 rounded-2xl bg-slate-900 border border-slate-700 text-xs text-slate-300 font-black">
+            Item <span className="text-purple-400">{currentIndex + 1}</span> of {items.length}
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-purple-100 border-2 border-purple-300 text-purple-800 text-xs font-black shadow-sm">
-            <Award className="w-4 h-4 text-purple-600" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-purple-950/60 border border-purple-500/40 text-purple-300 text-xs font-black shadow-sm">
+            <Award className="w-4 h-4 text-purple-400" />
             <span>Mastery: {scoreCount}</span>
           </div>
         </div>
       </div>
 
       {/* Main Acoustic Interaction Chamber */}
-      <div className="rounded-[32px] border-4 border-white bg-white/95 p-5 sm:p-10 shadow-[0_12px_0_rgba(0,0,0,0.08)] relative overflow-hidden text-slate-800">
+      <div className="rounded-[28px] sm:rounded-[32px] border-2 border-slate-700/60 bg-[#121927]/90 backdrop-blur-xl p-5 sm:p-10 shadow-xl relative overflow-hidden text-slate-100">
         {/* Audio Player Hub */}
         <div className="flex flex-col items-center justify-center py-4 text-center space-y-4">
           <div className="relative">
@@ -204,17 +235,17 @@ export const ListeningLabExercise: React.FC = () => {
             <button
               onClick={() => handlePlayAudio(0.75)}
               disabled={isPlayingAudio}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 text-slate-700 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 border-2 border-slate-700 text-slate-200 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Turtle className="w-3.5 h-3.5 text-purple-600" />
+              <Turtle className="w-3.5 h-3.5 text-purple-400" />
               <span>Slow Audio</span>
             </button>
           </div>
         </div>
 
         {/* Masked Sentence Display */}
-        <div className="my-5 sm:my-6 p-4 sm:p-6 rounded-2xl border-2 border-slate-200 bg-slate-50 text-center">
-          <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-wide leading-relaxed">
+        <div className="my-5 sm:my-6 p-4 sm:p-6 rounded-2xl border-2 border-slate-700 bg-slate-900/80 text-center">
+          <div className="text-xl sm:text-2xl font-black text-white tracking-wide leading-relaxed">
             {maskedSentence.split('__________').map((part, idx, arr) => (
               <React.Fragment key={idx}>
                 <span>{part}</span>
@@ -222,11 +253,11 @@ export const ListeningLabExercise: React.FC = () => {
                   <span className={`inline-block mx-2 px-4 py-1 rounded-2xl border-2 font-mono text-base sm:text-xl transition-all shadow-sm ${
                     isAnswerChecked
                       ? isCorrect
-                        ? 'border-emerald-400 bg-emerald-100 text-emerald-900 font-black'
-                        : 'border-rose-400 bg-rose-100 text-rose-900 font-black'
+                        ? 'border-emerald-400 bg-emerald-950/60 text-emerald-300 font-black'
+                        : 'border-rose-400 bg-rose-950/60 text-rose-300 font-black'
                       : selectedOption
-                        ? 'border-purple-400 bg-purple-100 text-purple-900 font-black'
-                        : 'border-dashed border-slate-400 bg-white text-slate-400'
+                        ? 'border-purple-400 bg-purple-950/60 text-purple-300 font-black'
+                        : 'border-dashed border-slate-600 bg-slate-800 text-slate-400'
                   }`}>
                     {selectedOption || '???'}
                   </span>
@@ -235,7 +266,7 @@ export const ListeningLabExercise: React.FC = () => {
             ))}
           </div>
 
-          <p className="mt-3 text-sm text-slate-500 font-bold italic">
+          <p className="mt-3 text-sm text-slate-400 font-bold italic">
             "{currentItem.english}"
           </p>
         </div>
@@ -246,7 +277,7 @@ export const ListeningLabExercise: React.FC = () => {
             const isSelected = selectedOption === option;
             const isTarget = option.toLowerCase() === clozeTargetWord.toLowerCase();
 
-            let btnStyle = 'border-b-[5px] border-slate-300 bg-white text-slate-800 hover:bg-slate-50 shadow-md';
+            let btnStyle = 'border-b-[5px] border-slate-950 bg-slate-800 text-slate-100 hover:bg-slate-750 shadow-md';
 
             if (isAnswerChecked) {
               if (isTarget) {
@@ -254,7 +285,7 @@ export const ListeningLabExercise: React.FC = () => {
               } else if (isSelected && !isCorrect) {
                 btnStyle = 'border-b-[5px] border-[#EA2B2B] bg-[#FF4B4B] text-white shadow-lg';
               } else {
-                btnStyle = 'border-2 border-slate-200 bg-slate-100 text-slate-400 opacity-60';
+                btnStyle = 'border-2 border-slate-800 bg-slate-900/40 text-slate-500 opacity-40';
               }
             } else if (isSelected) {
               btnStyle = 'border-b-[5px] border-[#1899D6] bg-[#1CB0F6] text-white shadow-lg ring-2 ring-sky-300';
@@ -275,25 +306,25 @@ export const ListeningLabExercise: React.FC = () => {
 
         {/* Verification Result Banner */}
         {isAnswerChecked && (
-          <div className={`p-4 sm:p-5 rounded-3xl border-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn shadow-md ${
+          <div className={`p-4 sm:p-5 rounded-3xl border-2 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn shadow-xl ${
             isCorrect
-              ? 'bg-emerald-100 border-emerald-300 text-emerald-950'
-              : 'bg-rose-100 border-rose-300 text-rose-950'
+              ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-100'
+              : 'bg-rose-950/70 border-rose-500/50 text-rose-100'
           }`}>
             <div className="flex items-center gap-3">
               {isCorrect ? (
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0" />
               ) : (
-                <XCircle className="w-8 h-8 text-rose-600 shrink-0" />
+                <XCircle className="w-8 h-8 text-rose-400 shrink-0" />
               )}
               <div>
                 <p className="font-black text-sm sm:text-base">
                   {isCorrect ? '¡Reconocimiento Auditivo Correcto! (+15 XP)' : '¡Inténtalo de nuevo!'}
                 </p>
-                <p className="text-xs font-bold text-slate-700 mt-0.5">
-                  The spoken word was <strong className="text-slate-950 underline">{clozeTargetWord}</strong>.
+                <p className="text-xs font-bold text-slate-300 mt-0.5">
+                  The spoken word was <strong className="text-white underline">{clozeTargetWord}</strong>.
                   {currentItem.pronunciationTip && (
-                    <span className="block text-[11px] text-slate-600 mt-0.5 font-medium">
+                    <span className="block text-[11px] text-slate-400 mt-0.5 font-medium">
                       💡 Tip: {currentItem.pronunciationTip}
                     </span>
                   )}
@@ -313,14 +344,14 @@ export const ListeningLabExercise: React.FC = () => {
 
         {/* Footer Action Bar */}
         {!isAnswerChecked && (
-          <div className="flex justify-end items-center pt-4 border-t-2 border-slate-100">
+          <div className="flex justify-end items-center pt-4 border-t border-slate-700/60">
             <button
               onClick={handleCheckAnswer}
               disabled={!selectedOption}
               className={`px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-md active:translate-y-1 active:border-b-0 ${
                 selectedOption
                   ? 'bg-[#1CB0F6] hover:bg-[#1899D6] border-b-[5px] border-[#1374A6] text-white cursor-pointer shadow-sky-500/25'
-                  : 'bg-slate-200 border-b-[5px] border-slate-300 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-800 border-b-[5px] border-slate-950 text-slate-500 cursor-not-allowed'
               }`}
             >
               Verify Auditory Answer

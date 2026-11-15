@@ -98,20 +98,20 @@ export const GameRewardToast: React.FC = () => {
 
   return (
     <div className="reward-toast fixed inset-x-4 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-[55] mx-auto max-w-sm md:inset-x-auto md:bottom-6 md:right-6 animate-princess-pop">
-      <div className="relative overflow-hidden rounded-[28px] border-4 border-white bg-white/95 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] backdrop-blur-xl text-slate-800">
+      <div className="relative overflow-hidden rounded-[28px] border-2 border-slate-700/80 bg-[#121927]/95 p-4 shadow-2xl backdrop-blur-xl text-slate-100">
         <div className="relative flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 border-2 border-amber-300 text-2xl shadow-md">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 border border-slate-700 text-2xl shadow-md">
             {reward.emoji}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-black text-slate-900 leading-tight">{reward.title}</p>
-            <p className="mt-0.5 text-xs font-bold leading-relaxed text-slate-500">{reward.detail}</p>
+            <p className="text-sm font-black text-white leading-tight">{reward.title}</p>
+            <p className="mt-0.5 text-xs font-bold leading-relaxed text-slate-300">{reward.detail}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 rounded-2xl bg-amber-100 border-2 border-amber-300 px-2.5 py-1.5 text-xs font-black text-amber-800 shadow-sm">
-            <Zap className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          <div className="flex shrink-0 items-center gap-1 rounded-2xl bg-amber-500/20 border border-amber-500/40 px-2.5 py-1.5 text-xs font-black text-amber-300 shadow-sm">
+            <Zap className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
             +{reward.xp}
           </div>
-          <Sparkles className="absolute -right-1 -top-1 h-5 w-5 animate-sparkle-spin text-amber-500" />
+          <Sparkles className="absolute -right-1 -top-1 h-5 w-5 animate-sparkle-spin text-amber-400" />
         </div>
       </div>
     </div>

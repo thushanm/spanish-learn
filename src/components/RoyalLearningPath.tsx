@@ -10,7 +10,19 @@ export const RoyalLearningPath: React.FC = () => {
   const { stats, selectedUnitId, setSelectedUnitId, setActiveTab, addXP } = useApp();
   const sounds = useSoundEffects(stats.soundEnabled);
   const activeNodeRef = useRef<HTMLDivElement | null>(null);
-  const [openedChests, setOpenedChests] = useState<number[]>([]);
+  const [openedChests, setOpenedChests] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('jtm_opened_chests');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jtm_opened_chests', JSON.stringify(openedChests));
+    } catch {}
+  }, [openedChests]);
 
   // Find index of active lesson
   const activeIndex = SPANISH_UNITS.findIndex(u => u.id === selectedUnitId);
@@ -60,12 +72,12 @@ export const RoyalLearningPath: React.FC = () => {
   return (
     <div className="relative py-8 select-none">
       <div className="text-center mb-8 space-y-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border-2 border-amber-300 text-amber-800 text-xs font-black uppercase tracking-wider shadow-sm">
-          <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black uppercase tracking-wider shadow-sm">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
           <span>Camino de Aventuras · A1 a B2</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900">Your Spanish Adventure Map</h2>
-        <p className="text-xs font-bold text-slate-600">Step by step through real conversations & missions</p>
+        <h2 className="text-xl sm:text-2xl font-black text-white">Your Spanish Adventure Map</h2>
+        <p className="text-xs font-bold text-slate-400">Step by step through real conversations & missions</p>
       </div>
 
       {/* Winding Path Nodes List */}
@@ -141,10 +153,10 @@ export const RoyalLearningPath: React.FC = () => {
                   onClick={() => handleNodeClick(unit.id, isLocked)}
                   className={`relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-[28px] border-b-[6px] transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#FFC800] border-[#E5A400] shadow-[0_8px_0_rgba(229,164,0,0.5)] text-slate-900 ring-4 ring-white'
+                      ? 'bg-[#FFC800] border-[#E5A400] shadow-[0_8px_0_rgba(229,164,0,0.5)] text-slate-900 ring-4 ring-amber-400/40'
                       : isCompleted
                       ? 'bg-[#58CC02] border-[#46A302] shadow-[0_6px_0_rgba(70,163,2,0.4)] text-white'
-                      : 'bg-slate-200 border-slate-300 text-slate-400 cursor-not-allowed opacity-80'
+                      : 'bg-slate-800 border-slate-950 text-slate-500 cursor-not-allowed opacity-60'
                   }`}
                 >
                   {isCompleted ? (
@@ -159,10 +171,10 @@ export const RoyalLearningPath: React.FC = () => {
                   <span
                     className={`absolute -bottom-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border-2 shadow-sm ${
                       isActive
-                        ? 'bg-white border-amber-400 text-amber-800'
+                        ? 'bg-slate-900 border-amber-400 text-amber-300'
                         : isCompleted
-                        ? 'bg-white border-emerald-400 text-emerald-800'
-                        : 'bg-white border-slate-300 text-slate-500'
+                        ? 'bg-slate-900 border-emerald-400 text-emerald-300'
+                        : 'bg-slate-900 border-slate-700 text-slate-500'
                     }`}
                   >
                     {unit.level}

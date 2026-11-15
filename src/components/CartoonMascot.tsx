@@ -102,13 +102,13 @@ export const CartoonMascot: React.FC<{ compact?: boolean }> = ({ compact = false
   return (
     <div
       onClick={handleMascotTap}
-      className={`group relative cursor-pointer select-none rounded-[32px] border-4 border-white bg-white/95 backdrop-blur-xl shadow-[0_12px_0_rgba(0,0,0,0.08)] p-4 sm:p-6 transition-transform hover:-translate-y-1 ${
+      className={`group relative cursor-pointer select-none rounded-[28px] sm:rounded-[32px] border-2 border-slate-700/60 bg-[#121927]/90 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.5)] p-4 sm:p-6 transition-transform hover:-translate-y-1 ${
         compact ? 'max-w-md mx-auto' : 'w-full'
       }`}
     >
-      {/* Background Decorative Halos */}
-      <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-amber-300/30 blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-sky-300/30 blur-2xl pointer-events-none" />
+      {/* Background Decorative Halos (Gentle dark glow) */}
+      <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-sky-500/10 blur-2xl pointer-events-none" />
 
       <div className="relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
         {/* ================= CHICO THE CARTOON MASCOT SVG ================= */}
@@ -353,28 +353,28 @@ export const CartoonMascot: React.FC<{ compact?: boolean }> = ({ compact = false
         {/* ================= CHUNKY CARTOON SPEECH BUBBLE ================= */}
         <div className="min-w-0 flex-1 text-center sm:text-left space-y-2">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-amber-400 bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-wider text-amber-800 shadow-sm">
-              <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-spin" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/20 px-3 py-1 text-xs font-black uppercase tracking-wider text-amber-300 shadow-sm">
+              <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-spin" />
               <span>Chico · Mascot</span>
             </span>
 
-            <span className="rounded-full border-2 border-sky-300 bg-sky-100 px-2.5 py-0.5 text-[11px] font-black uppercase text-sky-800">
+            <span className="rounded-full border border-sky-500/40 bg-sky-500/20 px-2.5 py-0.5 text-[11px] font-black uppercase text-sky-300">
               {currentPhrase.tag}
             </span>
 
             {comboStreak >= 2 && (
-              <span className="rounded-full border-2 border-orange-400 bg-orange-100 px-2.5 py-0.5 text-[11px] font-black uppercase text-orange-700 flex items-center gap-1 animate-pulse">
-                <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+              <span className="rounded-full border border-orange-500/40 bg-orange-500/20 px-2.5 py-0.5 text-[11px] font-black uppercase text-orange-300 flex items-center gap-1 animate-pulse">
+                <Flame className="w-3.5 h-3.5 fill-orange-400 text-orange-400" />
                 <span>{comboStreak}x Streak</span>
               </span>
             )}
           </div>
 
-          <div className="relative rounded-2xl border-3 border-slate-200 bg-slate-50 p-3 sm:p-4 text-slate-800 shadow-inner">
-            <p className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-snug">
+          <div className="relative rounded-2xl border-2 border-slate-700/80 bg-slate-900/80 p-3 sm:p-4 text-slate-100 shadow-inner">
+            <p className="text-base sm:text-lg font-black tracking-tight text-white leading-snug">
               &ldquo;{currentPhrase.spanish}&rdquo;
             </p>
-            <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm font-bold text-slate-400 mt-1">
               {currentPhrase.english}
             </p>
           </div>

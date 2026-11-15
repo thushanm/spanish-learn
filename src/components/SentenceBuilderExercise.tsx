@@ -121,8 +121,29 @@ export const SentenceBuilderExercise: React.FC = () => {
   const currentUnit = SPANISH_UNITS.find(unit => unit.id === selectedUnitId) || SPANISH_UNITS[0];
   const topicItems = currentUnit.items;
 
-  const [batchStart, setBatchStart] = useState(0);
-  const [questionIndex, setQuestionIndex] = useState(0);
+  // Persistent exercise progress across reloads / device sleep
+  const [batchStart, setBatchStart] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`jtm_builder_progress_${currentUnit.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.batchStart === 'number') return parsed.batchStart;
+      }
+    } catch {}
+    return 0;
+  });
+
+  const [questionIndex, setQuestionIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`jtm_builder_progress_${currentUnit.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.questionIndex === 'number') return parsed.questionIndex;
+      }
+    } catch {}
+    return 0;
+  });
+
   const [availableChips, setAvailableChips] = useState<WordChip[]>([]);
   const [assembledChips, setAssembledChips] = useState<WordChip[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState>('idle');
@@ -130,6 +151,16 @@ export const SentenceBuilderExercise: React.FC = () => {
   const [praise, setPraise] = useState<string | null>(null);
   const [showFloatingXP, setShowFloatingXP] = useState(false);
   const [deckComplete, setDeckComplete] = useState(false);
+
+  // Automatically save sentence builder progress
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        `jtm_builder_progress_${currentUnit.id}`,
+        JSON.stringify({ batchStart, questionIndex })
+      );
+    } catch {}
+  }, [currentUnit.id, batchStart, questionIndex]);
 
   const batchItems = useMemo(
     () => topicItems.slice(batchStart, batchStart + BATCH_SIZE),
@@ -151,8 +182,20 @@ export const SentenceBuilderExercise: React.FC = () => {
   const hasNextDeck = batchStart + BATCH_SIZE < topicItems.length;
 
   useEffect(() => {
-    setBatchStart(0);
-    setQuestionIndex(0);
+    try {
+      const saved = localStorage.getItem(`jtm_builder_progress_${currentUnit.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setBatchStart(typeof parsed.batchStart === 'number' ? parsed.batchStart : 0);
+        setQuestionIndex(typeof parsed.questionIndex === 'number' ? parsed.questionIndex : 0);
+      } else {
+        setBatchStart(0);
+        setQuestionIndex(0);
+      }
+    } catch {
+      setBatchStart(0);
+      setQuestionIndex(0);
+    }
     setCorrectStreak(0);
     setPraise(null);
     setDeckComplete(false);
@@ -334,7 +377,7 @@ export const SentenceBuilderExercise: React.FC = () => {
       <CartoonMascot compact />
 
       {/* Top Header Card */}
-      <div className="rounded-[32px] border-4 border-white bg-white/95 p-5 shadow-[0_12px_0_rgba(0,0,0,0.08)] backdrop-blur-md text-slate-800">
+      <div className="rounded-[28px] sm:rounded-[32px] border-2 border-slate-700/60 bg-[#121927]/90 p-5 shadow-xl backdrop-blur-md text-slate-100">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#A855F7] text-white shadow-md border-b-4 border-[#8B2BE2]">
@@ -342,25 +385,25 @@ export const SentenceBuilderExercise: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-base font-black text-slate-900">Build a Spanish sentence</h1>
+                <h1 className="truncate text-base font-black text-white">Build a Spanish sentence</h1>
                 {correctStreak >= 2 && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border-2 border-amber-300 text-[10px] font-black uppercase tracking-wider animate-bounce">
-                    <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-wider animate-bounce">
+                    <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     <span>{correctStreak}x Combo</span>
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-xs font-bold text-slate-500">{currentUnit.subtitle || currentUnit.title}</p>
+              <p className="mt-0.5 text-xs font-bold text-slate-400">{currentUnit.subtitle || currentUnit.title}</p>
             </div>
           </div>
-          <div className="shrink-0 rounded-2xl bg-purple-100 border-2 border-purple-300 px-3 py-1.5 text-right text-[10px] font-black uppercase tracking-wide text-purple-900 shadow-sm">
+          <div className="shrink-0 rounded-2xl bg-purple-950/60 border border-purple-500/40 px-3 py-1.5 text-right text-[10px] font-black uppercase tracking-wide text-purple-300 shadow-sm">
             <span className="block">Pack {deckNumber}/{totalDecks}</span>
-            <span className="text-purple-700">Round {roundNumber}/{REPEAT_ROUNDS}</span>
+            <span className="text-purple-400">Round {roundNumber}/{REPEAT_ROUNDS}</span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200 border border-slate-300 p-0.5">
+        <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-800 border border-slate-700 p-0.5">
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-purple-500 via-sky-400 to-emerald-400"
             animate={{ width: `${progress}%` }}
@@ -373,12 +416,12 @@ export const SentenceBuilderExercise: React.FC = () => {
       <motion.main
         animate={feedback === 'incorrect' ? { x: [-12, 12, -8, 8, -4, 4, 0] } : {}}
         transition={{ duration: 0.45 }}
-        className={`relative overflow-hidden rounded-[32px] border-4 bg-white/95 p-5 shadow-[0_12px_0_rgba(0,0,0,0.08)] transition-all sm:p-8 text-slate-800 ${
+        className={`relative overflow-hidden rounded-[28px] sm:rounded-[32px] border-2 bg-[#121927]/90 p-5 shadow-xl transition-all sm:p-8 text-slate-100 ${
           feedback === 'correct'
-            ? 'border-emerald-400 ring-4 ring-emerald-200'
+            ? 'border-emerald-400 ring-4 ring-emerald-500/30'
             : feedback === 'incorrect'
-            ? 'border-rose-400 ring-4 ring-rose-200'
-            : 'border-white'
+            ? 'border-rose-400 ring-4 ring-rose-500/30'
+            : 'border-slate-700/60'
         }`}
       >
         {/* Floating XP Score Popup */}
@@ -397,16 +440,16 @@ export const SentenceBuilderExercise: React.FC = () => {
         </AnimatePresence>
 
         <div className="relative text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-purple-300 bg-purple-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-purple-900">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/40 bg-purple-500/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-purple-300">
             {currentChallenge.style === 'listen' ? <Volume2 className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
             {currentChallenge.helper}
           </span>
-          <h2 className="mx-auto mt-4 max-w-2xl text-xl font-black leading-snug text-slate-900 sm:text-3xl">
+          <h2 className="mx-auto mt-4 max-w-2xl text-xl font-black leading-snug text-white sm:text-3xl">
             “{currentChallenge.prompt}”
           </h2>
           <button
             onClick={playChallengeAudio}
-            className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-2xl border-2 border-sky-300 bg-sky-100 px-4 py-2 text-xs font-black text-sky-800 transition-colors hover:bg-sky-200 cursor-pointer shadow-sm"
+            className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-2xl border-2 border-sky-500/40 bg-sky-950/60 px-4 py-2 text-xs font-black text-sky-300 transition-colors hover:bg-sky-900/60 cursor-pointer shadow-sm"
           >
             <Volume2 className="h-4 w-4" />
             <span>Escuchar en Español</span>
@@ -415,16 +458,16 @@ export const SentenceBuilderExercise: React.FC = () => {
 
         {/* Answer Slot (Tiles fly in using Framer Motion layoutId) */}
         <section className="relative mt-6 sm:mt-8">
-          <p className="mb-2 text-center text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+          <p className="mb-2 text-center text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
             Tu frase en español
           </p>
           <div
-            className={`flex min-h-24 flex-wrap items-center justify-center gap-2.5 rounded-3xl border-3 border-dashed p-3 sm:min-h-28 sm:p-4 transition-colors ${
+            className={`flex min-h-24 flex-wrap items-center justify-center gap-2.5 rounded-3xl border-2 border-dashed p-3 sm:min-h-28 sm:p-4 transition-colors ${
               feedback === 'correct'
-                ? 'border-emerald-400 bg-emerald-50'
+                ? 'border-emerald-500/60 bg-emerald-950/30'
                 : feedback === 'incorrect'
-                ? 'border-rose-400 bg-rose-50'
-                : 'border-sky-300 bg-sky-50/70'
+                ? 'border-rose-500/60 bg-rose-950/30'
+                : 'border-slate-700 bg-slate-900/70'
             }`}
           >
             {assembledChips.length ? (
@@ -441,7 +484,7 @@ export const SentenceBuilderExercise: React.FC = () => {
                 </motion.button>
               ))
             ) : (
-              <span className="px-4 text-center text-xs font-bold text-slate-400">
+              <span className="px-4 text-center text-xs font-bold text-slate-500">
                 Toca las palabras de abajo para armar la respuesta
               </span>
             )}
@@ -450,7 +493,7 @@ export const SentenceBuilderExercise: React.FC = () => {
 
         {/* Word Bank (Remaining Tiles) */}
         <section className="relative mt-5 sm:mt-7">
-          <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+          <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
             Banco de palabras
           </p>
           <div className="flex min-h-16 flex-wrap justify-center gap-2.5">
@@ -461,7 +504,7 @@ export const SentenceBuilderExercise: React.FC = () => {
                 transition={{ type: 'spring', stiffness: 440, damping: 25 }}
                 onClick={() => addChip(chip)}
                 disabled={isAnswered}
-                className="rounded-2xl border-b-[5px] border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-800 shadow-md hover:bg-slate-50 active:translate-y-1 active:border-b-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                className="rounded-2xl border-b-[5px] border-slate-950 bg-slate-800 px-4 py-2.5 text-sm font-black text-slate-100 shadow-md hover:bg-slate-750 active:translate-y-1 active:border-b-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {chip.text}
               </motion.button>
@@ -476,18 +519,18 @@ export const SentenceBuilderExercise: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="relative mt-6 flex items-start gap-3 rounded-3xl border-3 border-emerald-300 bg-emerald-100 p-4 text-emerald-950 shadow-sm"
+              className="relative mt-6 flex items-start gap-3 rounded-3xl border-2 border-emerald-500/50 bg-emerald-950/70 p-4 text-emerald-200 shadow-lg"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#58CC02] text-white shadow-md">
                 <CheckCircle2 className="h-6 w-6 stroke-[3]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-black text-emerald-950 text-base">¡Correcto! ¡Súper sintaxis!</p>
-                <p className="mt-1 text-sm font-black text-emerald-800">{currentChallenge.targetSpanish}</p>
+                <p className="font-black text-emerald-300 text-base">¡Correcto! ¡Súper sintaxis!</p>
+                <p className="mt-1 text-sm font-black text-emerald-100">{currentChallenge.targetSpanish}</p>
               </div>
               <button
                 onClick={playChallengeAudio}
-                className="rounded-xl bg-emerald-200 p-2.5 text-emerald-900 hover:bg-emerald-300 cursor-pointer"
+                className="rounded-xl bg-emerald-900/60 p-2.5 text-emerald-200 hover:bg-emerald-800/80 cursor-pointer"
               >
                 <Volume2 className="h-4 w-4" />
               </button>
@@ -500,24 +543,24 @@ export const SentenceBuilderExercise: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 15 }}
-              className="relative mt-6 rounded-3xl border-3 border-rose-300 bg-rose-100 p-4 text-left shadow-sm"
+              className="relative mt-6 rounded-3xl border-2 border-rose-500/50 bg-rose-950/70 p-4 text-left shadow-lg text-rose-100"
             >
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FF4B4B] text-white shadow-md">
                   <X className="h-6 w-6 stroke-[3]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-black text-rose-950 text-base">Casi — aquí tienes la respuesta correcta:</p>
-                  <p className="mt-1.5 text-base font-black text-rose-900 sm:text-lg">
+                  <p className="font-black text-rose-300 text-base">Casi — aquí tienes la respuesta correcta:</p>
+                  <p className="mt-1.5 text-base font-black text-white sm:text-lg">
                     {currentChallenge.targetSpanish}
                   </p>
-                  <p className="mt-1 text-xs font-bold leading-relaxed text-slate-600">
+                  <p className="mt-1 text-xs font-bold leading-relaxed text-slate-300">
                     ¡No te rindas! Esta frase se repetirá en una ronda posterior para que la domines.
                   </p>
                 </div>
                 <button
                   onClick={playChallengeAudio}
-                  className="rounded-xl bg-rose-200 p-2.5 text-rose-900 hover:bg-rose-300 cursor-pointer"
+                  className="rounded-xl bg-rose-900/60 p-2.5 text-rose-200 hover:bg-rose-800/80 cursor-pointer"
                 >
                   <Volume2 className="h-4 w-4" />
                 </button>
@@ -527,11 +570,11 @@ export const SentenceBuilderExercise: React.FC = () => {
         </AnimatePresence>
 
         {/* Action Controls */}
-        <div className="relative mt-6 flex items-center justify-between gap-3 border-t-2 border-slate-200 pt-5">
+        <div className="relative mt-6 flex items-center justify-between gap-3 border-t border-slate-700/60 pt-5">
           <button
             onClick={resetTiles}
             disabled={isAnswered || assembledChips.length === 0}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-black text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-35 cursor-pointer"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-black text-slate-400 transition-colors hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 cursor-pointer"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Resetear</span>
