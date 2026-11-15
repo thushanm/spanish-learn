@@ -15,7 +15,8 @@ import {
   Target,
   Trophy,
   Volume2,
-  Zap
+  Zap,
+  Clapperboard
 } from 'lucide-react';
 import { getDailyQuest, getPlayerLevel } from '../utils/progression';
 import { CartoonMascot } from './CartoonMascot';
@@ -158,6 +159,44 @@ export const LearningHome: React.FC = () => {
 
       {/* Expressive Cartoon Mascot Chico */}
       <CartoonMascot />
+
+      {/* Featured Cinema Spanish Lab (YouTube Movie Clips & Shadowing) */}
+      <section className="relative overflow-hidden rounded-[28px] border-2 border-rose-500/40 bg-gradient-to-r from-[#1E0E1B] via-[#161224] to-[#0E1524] p-4 sm:p-5 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 via-amber-500 to-sky-400 p-[3px] shadow-lg shadow-rose-500/20 shrink-0">
+              <div className="w-full h-full bg-[#0B0F19] rounded-[13px] flex items-center justify-center">
+                <Clapperboard className="w-6 h-6 text-rose-400 animate-pulse" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                  New Feature · Free YouTube Clips
+                </span>
+                <span className="text-xs">🎬 🇪🇸 🇲🇽</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                Cinema Spanish Lab: Money Heist, Coco &amp; Élite
+              </h2>
+              <p className="text-xs text-slate-300 font-bold max-w-xl">
+                Loop authentic 5-10s movie slices, slow down rapid dialogues with 0.75x speed, inspect subtitles, and shadow the actors!
+              </p>
+            </div>
+          </div>
+
+          <TactileButton
+            variant="amethyst"
+            size="md"
+            onClick={() => setActiveTab('cinema')}
+            className="shadow-lg shadow-rose-500/20 shrink-0 w-full sm:w-auto"
+          >
+            <Clapperboard className="w-4 h-4" />
+            <span>Open Cinema Lab</span>
+            <ChevronRight className="w-4 h-4" />
+          </TactileButton>
+        </div>
+      </section>
 
       {/* Cartoon Winding Learning Path with Pulsing Nodes & Chest Rewards */}
       <RoyalLearningPath />

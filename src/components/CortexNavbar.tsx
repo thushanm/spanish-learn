@@ -11,7 +11,8 @@ import {
   VolumeX,
   Settings,
   Sparkles,
-  BarChart3
+  BarChart3,
+  Clapperboard
 } from 'lucide-react';
 import { playClickSound } from '../utils/soundEffects';
 import { soundEffects } from '../utils/useSoundEffects';
@@ -75,6 +76,18 @@ export const CortexNavbar: React.FC<CortexNavbarProps> = ({ onOpenSettings }) =>
             >
               <Brain className="w-4 h-4" />
               <span>Today</span>
+            </button>
+
+            <button
+              onClick={() => handleTab('cinema')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border-b-4 active:border-b-0 active:translate-y-1 ${
+                activeTab === 'cinema'
+                  ? 'bg-[#E11D48] border-[#BE123C] text-white shadow-sm'
+                  : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Clapperboard className="w-4 h-4" />
+              <span>Cinema</span>
             </button>
 
             <button
@@ -180,10 +193,10 @@ export const MobileBottomNav: React.FC = () => {
 
   const navItems = [
     { id: 'roadmap', label: 'Today', icon: Brain, activeColor: 'text-amber-500' },
-    { id: 'builder', label: 'Build', icon: Puzzle, activeColor: 'text-purple-500' },
+    { id: 'cinema', label: 'Cinema', icon: Clapperboard, activeColor: 'text-rose-500' },
     { id: 'practice', label: 'Speak', icon: Mic, activeColor: 'text-emerald-500', isCenter: true },
+    { id: 'builder', label: 'Build', icon: Puzzle, activeColor: 'text-purple-500' },
     { id: 'dictionary', label: 'Words', icon: BookOpen, activeColor: 'text-sky-500' },
-    { id: 'analytics', label: 'Progress', icon: BarChart3, activeColor: 'text-teal-500' },
   ];
 
   return (

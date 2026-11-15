@@ -4,6 +4,7 @@ import { SPANISH_UNITS } from '../data/spanishData';
 
 export type ActiveTab =
   | 'roadmap'
+  | 'cinema'
   | 'practice'
   | 'builder'
   | 'listening'

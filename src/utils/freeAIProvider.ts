@@ -24,6 +24,15 @@ export interface SpanishPedagogicalFeedback {
   englishTranslationOfReply: string;
 }
 
+export interface CinemaSceneAnalysis {
+  slangAndIdioms: string[];
+  culturalNotes: string;
+  toneAndDelivery: string;
+  grammarDeepDive: string;
+  conversationPracticeTip: string;
+  isAiGenerated: boolean;
+}
+
 // Built-in Default Global Groq API Key:
 // Pre-configured so no manual saving or user key entry is required!
 const BUILTIN_DEFAULT_GROQ_KEY = String.fromCharCode(
@@ -236,6 +245,84 @@ Return a strict JSON object with these EXACT keys:
       phoneticSyllableTip: parsed.phoneticSyllableTip || '',
       suggestedReplyInSpanish: parsed.suggestedReplyInSpanish || '¡Muy bien! Sigue practicando.',
       englishTranslationOfReply: parsed.englishTranslationOfReply || 'Very good! Keep practicing.'
+    };
+  }
+
+  // Real-time Cinema Scene & Slang Breakdown via Groq Meta Llama 3.3
+  public async analyzeCinemaClip(clip: {
+    title: string;
+    spanishDialogue: string;
+    englishTranslation: string;
+    speaker: string;
+    country: string;
+    level: string;
+    culturalContext: string;
+    grammarFocus: string;
+  }): Promise<CinemaSceneAnalysis> {
+    const activeKey = this.getGroqApiKey();
+    if (activeKey) {
+      try {
+        const prompt = `You are an expert Spanish linguistic and cinema dialogue tutor. Analyze this short Spanish movie/series dialogue:
+Title: "${clip.title}"
+Speaker: "${clip.speaker}"
+Country/Dialect: "${clip.country}"
+CEFR Level: "${clip.level}"
+Spanish Dialogue: "${clip.spanishDialogue}"
+English Translation: "${clip.englishTranslation}"
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "slangAndIdioms": ["1-3 concise slang, colloquialisms or natural idioms used in this scene"],
+  "culturalNotes": "2-3 clear sentences on the cultural nuance, regional dialect traits (e.g. Madrid slang, Mexican seseo), and background",
+  "toneAndDelivery": "1-2 sentences analyzing the speaker's emotional tone, cadence, and delivery",
+  "grammarDeepDive": "2 sentences breaking down verb conjugations, pronouns, and syntax in this line",
+  "conversationPracticeTip": "1 practical sentence on how a learner can adapt this exact phrase in everyday conversation"
+}`;
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${activeKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            response_format: { type: 'json_object' }
+          })
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const parsed = JSON.parse(json.choices[0].message.content);
+          return {
+            slangAndIdioms: Array.isArray(parsed.slangAndIdioms) && parsed.slangAndIdioms.length > 0
+              ? parsed.slangAndIdioms
+              : [`Key expression: "${clip.spanishDialogue.split(' ')[0]}"`],
+            culturalNotes: parsed.culturalNotes || clip.culturalContext,
+            toneAndDelivery: parsed.toneAndDelivery || `Delivered with authentic ${clip.country} rhythm and character intensity.`,
+            grammarDeepDive: parsed.grammarDeepDive || clip.grammarFocus,
+            conversationPracticeTip: parsed.conversationPracticeTip || `Try replacing key nouns to fit your everyday situations in Spanish.`,
+            isAiGenerated: true
+          };
+        }
+      } catch (err) {
+        console.warn('Groq cinema analysis fallback to curated linguistics:', err);
+      }
+    }
+
+    // Curated high-precision fallback
+    return {
+      slangAndIdioms: [
+        `Authentic Phrasing: "${clip.spanishDialogue.split(' ').slice(0, 3).join(' ')}..."`,
+        `Dialect: ${clip.country}`
+      ],
+      culturalNotes: clip.culturalContext,
+      toneAndDelivery: `Spoken by ${clip.speaker} with natural conversational pacing and emotional weight.`,
+      grammarDeepDive: clip.grammarFocus,
+      conversationPracticeTip: `Practice shadowing this line at 0.75x speed until your accent matches the actor's rhythm.`,
+      isAiGenerated: false
     };
   }
 
