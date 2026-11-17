@@ -16,7 +16,8 @@ import {
   Trophy,
   Volume2,
   Zap,
-  Clapperboard
+  Clapperboard,
+  Scroll
 } from 'lucide-react';
 import { getDailyQuest, getPlayerLevel } from '../utils/progression';
 import { CartoonMascot } from './CartoonMascot';
@@ -193,6 +194,44 @@ export const LearningHome: React.FC = () => {
           >
             <Clapperboard className="w-4 h-4" />
             <span>Open Cinema Lab</span>
+            <ChevronRight className="w-4 h-4" />
+          </TactileButton>
+        </div>
+      </section>
+
+      {/* Featured Storybook Reader (Stories with Audio & Word Tap) */}
+      <section className="relative overflow-hidden rounded-[28px] border-2 border-blue-500/40 bg-gradient-to-r from-[#0C152B] via-[#121E36] to-[#0A1020] p-4 sm:p-5 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-sky-400 p-[3px] shadow-lg shadow-blue-500/20 shrink-0">
+              <div className="w-full h-full bg-[#0B0F19] rounded-[13px] flex items-center justify-center">
+                <Scroll className="w-6 h-6 text-sky-400 animate-pulse" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  New · Interactive Spanish Stories
+                </span>
+                <span className="text-xs">📖 🐕 ☕ 🎸</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                Storybook Reader: Read, Tap Words &amp; Listen Along
+              </h2>
+              <p className="text-xs text-slate-300 font-bold max-w-xl">
+                Immersive graded stories (A1–B2) with read-along voice narration, tap-to-inspect English meanings, and Groq AI grammar breakdowns!
+              </p>
+            </div>
+          </div>
+
+          <TactileButton
+            variant="cyan"
+            size="md"
+            onClick={() => setActiveTab('stories')}
+            className="shadow-lg shadow-blue-500/20 shrink-0 w-full sm:w-auto"
+          >
+            <Scroll className="w-4 h-4" />
+            <span>Open Storybooks</span>
             <ChevronRight className="w-4 h-4" />
           </TactileButton>
         </div>

@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { CortexNavbar, MobileBottomNav } from './components/CortexNavbar';
 import { LearningHome } from './components/LearningHome';
 import { CinemaSpanishLab } from './components/CinemaSpanishLab';
+import { StoryBookReader } from './components/StoryBookReader';
 import { AcousticSpeechStudio } from './components/AcousticSpeechStudio';
 import { SentenceBuilderExercise } from './components/SentenceBuilderExercise';
 import { ListeningLabExercise } from './components/ListeningLabExercise';
@@ -57,6 +58,7 @@ const AppContent: React.FC = () => {
       <main className="relative z-10 flex-1 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:pb-16">
         {activeTab === 'roadmap' && <LearningHome />}
         {activeTab === 'cinema' && <CinemaSpanishLab />}
+        {activeTab === 'stories' && <StoryBookReader />}
         {activeTab === 'practice' && <AcousticSpeechStudio />}
         {activeTab === 'builder' && <SentenceBuilderExercise />}
         {activeTab === 'listening' && <ListeningLabExercise />}
