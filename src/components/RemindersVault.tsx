@@ -182,14 +182,13 @@ export const RemindersVault: React.FC = () => {
                 <span>Active Time</span>
               </span>
               {isActivelyPracticing ? (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  Counting
+                  Active Practice
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  Paused (Idle)
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-semibold">
+                  ⏸️ Paused (Idle / Viewing)
                 </span>
               )}
             </div>
@@ -275,7 +274,7 @@ export const RemindersVault: React.FC = () => {
           <div className="flex items-center gap-2.5 text-slate-300">
             <HardDrive className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>
-              <strong>Smart Active Time & Phone Memory:</strong> නිකන් App එක open කර තිබීමෙන් කාලය ගණන් නොගනී. ඔබ Stories කියවන විට, Cinema clips නරඹන විට, හෝ වචන හදන / පුහුණු වෙන විට පමණක් සැබෑ කාලය ගණනය වේ! (තත්පර 35ක් idle වුවහොත් timer එක pause වේ). සියලුම දත්ත phone මතකයේ (LocalStorage) ස්ථිරව සුරැකේ.
+              <strong>Smart Inactivity Lock Active:</strong> App එක නිකන් open කර තැබූ විට හෝ Roadmap / Vault බැලීමේදී කාලය ගණන් නොගනී (0s / Paused). Stories කියවන විට, Cinema clips නරඹන විට, හෝ Builder/Exercises වල වචන සාදන විට පමණක් සැබෑ කාලය ගණනය වී Phone Memory එකෙහි ස්ථිරව සුරැකේ!
             </span>
           </div>
 

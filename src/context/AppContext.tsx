@@ -342,21 +342,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Active Engagement & Smart Study Time Engine
   // User Requirement: ONLY calculate time when user is actively practicing, reading stories, watching cinema clips, or building words.
-  // DO NOT count passive time when the app is just sitting open idle!
-  const lastInteractionTimeRef = useRef<number>(Date.now());
+  // DO NOT count passive time when the app is just sitting open idle or on roadmap/reminders/settings!
+  const PRACTICE_TABS: ActiveTab[] = [
+    'stories',
+    'cinema',
+    'builder',
+    'practice',
+    'listening',
+    'sprint',
+    'dialogue',
+    'clinic',
+    'ai-tutor'
+  ];
+
+  const activeTabRef = useRef<ActiveTab>(activeTab);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    if (!PRACTICE_TABS.includes(activeTab)) {
+      setIsActivelyPracticing(false);
+    }
+  }, [activeTab]);
+
+  const lastLearningActionTimeRef = useRef<number>(0);
   const [isMediaPlaying, setIsMediaPlaying] = useState<boolean>(false);
-  const [isActivelyPracticing, setIsActivelyPracticing] = useState<boolean>(true);
+  const [isActivelyPracticing, setIsActivelyPracticing] = useState<boolean>(false);
 
   const reportLearningActivity = useCallback((_activityLabel?: string) => {
-    lastInteractionTimeRef.current = Date.now();
-    setIsActivelyPracticing(true);
+    if (PRACTICE_TABS.includes(activeTabRef.current)) {
+      lastLearningActionTimeRef.current = Date.now();
+      setIsActivelyPracticing(true);
+    }
   }, []);
 
-  // Global activity listeners: any tap, click, keydown, touch anywhere in the app updates last interaction
+  // Global activity listeners: ONLY update active practice if currently on an active practice / learning tab!
   useEffect(() => {
     const onUserActivity = () => {
-      lastInteractionTimeRef.current = Date.now();
-      setIsActivelyPracticing(true);
+      if (PRACTICE_TABS.includes(activeTabRef.current)) {
+        lastLearningActionTimeRef.current = Date.now();
+        setIsActivelyPracticing(true);
+      }
     };
 
     const events: (keyof WindowEventMap)[] = ['pointerdown', 'touchstart', 'click', 'keydown', 'input'];
@@ -373,18 +397,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Smart Study Timer: ONLY ticks when:
   // 1. Tab/Window is visible AND
-  // 2. User has actively interacted within the last 35 seconds OR Web Speech API is speaking OR video/audio media is playing!
-  // If user leaves the app idle for > 35s with no media/interaction, the timer automatically PAUSES!
+  // 2. Either:
+  //    - Video/audio media is actively playing (e.g. Cinema clip playing)
+  //    - OR Web Speech API is speaking (Story narration / pronunciation audio)
+  //    - OR (Currently on a practice tab AND user has interacted within the last 15 seconds)
+  // If user is on Roadmap, Reminders, Analytics, or is idle for > 15s, the timer is strictly PAUSED!
   useEffect(() => {
-    const IDLE_TIMEOUT_MS = 35000; // 35 seconds idle timeout threshold
+    const IDLE_TIMEOUT_MS = 15000; // 15 seconds idle timeout threshold
 
     const timer = setInterval(() => {
       const now = Date.now();
       const isDocumentVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
+      const isPracticeTab = PRACTICE_TABS.includes(activeTabRef.current);
       const isSpeechActive = typeof window !== 'undefined' && Boolean(window.speechSynthesis && window.speechSynthesis.speaking);
-      const isRecentlyActive = (now - lastInteractionTimeRef.current) < IDLE_TIMEOUT_MS;
+      const isRecentlyActive = (now - lastLearningActionTimeRef.current) < IDLE_TIMEOUT_MS;
 
-      const isEngaged = isDocumentVisible && (isRecentlyActive || isSpeechActive || isMediaPlaying);
+      const isEngaged = isDocumentVisible && (
+        isMediaPlaying ||
+        isSpeechActive ||
+        (isPracticeTab && isRecentlyActive && lastLearningActionTimeRef.current > 0)
+      );
 
       setIsActivelyPracticing(isEngaged);
 
@@ -501,6 +533,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           xpEarned: currentToday.xpEarned + practiceXp + unitCompletionBonus + miniQuestBonus
         };
       }
+
+      lastLearningActionTimeRef.current = Date.now();
+      setIsActivelyPracticing(true);
 
       return {
         ...prev,

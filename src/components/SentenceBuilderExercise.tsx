@@ -116,7 +116,7 @@ function createChallenge(item: SpanishWordPhrase, round: number): BuildChallenge
 }
 
 export const SentenceBuilderExercise: React.FC = () => {
-  const { stats, selectedUnitId, recordPracticeResult, addXP, triggerGameAction, consecutiveMistakes } = useApp();
+  const { stats, selectedUnitId, recordPracticeResult, addXP, triggerGameAction, consecutiveMistakes, reportLearningActivity } = useApp();
   const sounds = useCartoonAudio(stats.soundEnabled);
   const currentUnit = SPANISH_UNITS.find(unit => unit.id === selectedUnitId) || SPANISH_UNITS[0];
   const topicItems = currentUnit.items;
@@ -221,6 +221,7 @@ export const SentenceBuilderExercise: React.FC = () => {
 
   const playChallengeAudio = () => {
     if (!currentChallenge) return;
+    reportLearningActivity('builder_audio');
     sounds.playClick();
     speakSpanish(currentChallenge.targetSpanish, {
       rate: stats.speechRate,
@@ -230,6 +231,7 @@ export const SentenceBuilderExercise: React.FC = () => {
 
   const resetTiles = () => {
     if (!currentChallenge || feedback !== 'idle') return;
+    reportLearningActivity('builder_reset');
     sounds.playClick();
     const words = currentChallenge.targetSpanish
       .replace(/[¿?¡!.,;:]/g, '')
@@ -247,6 +249,7 @@ export const SentenceBuilderExercise: React.FC = () => {
 
   const addChip = (chip: WordChip) => {
     if (feedback !== 'idle') return;
+    reportLearningActivity('builder_add_chip');
     sounds.playBubblePop();
     setAssembledChips(prev => [...prev, chip]);
     setAvailableChips(prev => prev.filter(c => c.id !== chip.id));
@@ -254,6 +257,7 @@ export const SentenceBuilderExercise: React.FC = () => {
 
   const removeChip = (chip: WordChip) => {
     if (feedback !== 'idle') return;
+    reportLearningActivity('builder_remove_chip');
     sounds.playBubblePop();
     setAvailableChips(prev => [...prev, chip]);
     setAssembledChips(prev => prev.filter(c => c.id !== chip.id));
@@ -261,6 +265,7 @@ export const SentenceBuilderExercise: React.FC = () => {
 
   const checkSentence = () => {
     if (!currentChallenge || !currentItem || feedback !== 'idle') return;
+    reportLearningActivity('builder_check_sentence');
     const builtSentence = assembledChips.map(c => c.text).join(' ');
     const isCorrect = normalizeSpanish(builtSentence) === normalizeSpanish(currentChallenge.targetSpanish);
 
