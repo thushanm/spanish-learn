@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserStats, SpanishWordPhrase, MistakeWordRecord, AccuracySessionRecord } from '../types';
+import { UserStats, SpanishWordPhrase, MistakeWordRecord, AccuracySessionRecord, ReminderWordRecord } from '../types';
 import { SPANISH_UNITS } from '../data/spanishData';
+import { soundEffects } from '../utils/useSoundEffects';
 
 export type ActiveTab =
   | 'roadmap'
   | 'cinema'
   | 'stories'
+  | 'reminders'
   | 'practice'
   | 'builder'
   | 'listening'
@@ -18,6 +20,12 @@ export type ActiveTab =
 
 export type CartoonMascotMood = 'idle' | 'cheering' | 'party_dance' | 'sad' | 'crying' | 'celebrate_finish';
 export type GameplayMood = 'normal' | 'streak' | 'mistake';
+
+export interface ReminderToastInfo {
+  show: boolean;
+  word: string;
+  meaning: string;
+}
 
 interface AppContextType {
   stats: UserStats;
@@ -32,6 +40,13 @@ interface AppContextType {
   setSelectedUnitId: (id: string | null) => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  // Reminders Vault (Long-press to save from anywhere)
+  reminderWords: ReminderWordRecord[];
+  addReminderWord: (word: Omit<ReminderWordRecord, 'id' | 'dateAdded'> & { id?: string; dateAdded?: string }) => void;
+  removeReminderWord: (id: string) => void;
+  clearReminderWords: () => void;
+  reminderToast: ReminderToastInfo | null;
+  dismissReminderToast: () => void;
   // Cartoon Arcade Mood & Mascot State
   comboStreak: number;
   consecutiveMistakes: number;
@@ -139,6 +154,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return 'roadmap';
   });
+
+  // Reminders Vault (Global 2-second Long-Press storage)
+  const REMINDERS_KEY = 'jtm_reminders_vault_v1';
+  const [reminderWords, setReminderWords] = useState<ReminderWordRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(REMINDERS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      {
+        id: 'rem-1',
+        spanish: 'hermoso',
+        phonetic: 'ehr-MOH-soh',
+        english: 'beautiful / lovely',
+        exampleSentence: 'Es un día muy hermoso en Barcelona.',
+        sourceContext: 'Everyday Spanish',
+        dateAdded: 'Today',
+        level: 'A1'
+      },
+      {
+        id: 'rem-2',
+        spanish: 'despacio',
+        phonetic: 'dehs-PAH-syoh',
+        english: 'slowly / gently',
+        exampleSentence: 'Por favor, habla más despacio.',
+        sourceContext: 'Communication',
+        dateAdded: 'Today',
+        level: 'A1'
+      }
+    ];
+  });
+
+  const [reminderToast, setReminderToast] = useState<ReminderToastInfo | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminderWords));
+    } catch (e) {}
+  }, [reminderWords]);
+
+  const addReminderWord = (wordData: Omit<ReminderWordRecord, 'id' | 'dateAdded'> & { id?: string; dateAdded?: string }) => {
+    const clean = wordData.spanish.toLowerCase().trim();
+    setReminderWords(prev => {
+      const exists = prev.find(w => w.spanish.toLowerCase().trim() === clean);
+      if (exists) return prev;
+      const newWord: ReminderWordRecord = {
+        id: wordData.id || `rem-${Date.now()}`,
+        spanish: wordData.spanish.trim(),
+        phonetic: wordData.phonetic || '',
+        english: wordData.english || '',
+        exampleSentence: wordData.exampleSentence || '',
+        sourceContext: wordData.sourceContext || 'Saved Word',
+        dateAdded: wordData.dateAdded || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        level: wordData.level || 'A1'
+      };
+      return [newWord, ...prev];
+    });
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try { navigator.vibrate(60); } catch (e) {}
+    }
+    soundEffects.playSnap();
+    setReminderToast({ show: true, word: wordData.spanish, meaning: wordData.english });
+    setTimeout(() => {
+      setReminderToast(null);
+    }, 3200);
+  };
+
+  const removeReminderWord = (id: string) => {
+    soundEffects.playClick();
+    setReminderWords(prev => prev.filter(w => w.id !== id));
+  };
+
+  const clearReminderWords = () => {
+    soundEffects.playClick();
+    setReminderWords([]);
+  };
+
+  const dismissReminderToast = () => {
+    setReminderToast(null);
+  };
 
   // Automatically save current tab and selected unit on every switch
   useEffect(() => {
@@ -397,6 +493,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedUnitId,
         activeTab,
         setActiveTab,
+        reminderWords,
+        addReminderWord,
+        removeReminderWord,
+        clearReminderWords,
+        reminderToast,
+        dismissReminderToast,
         comboStreak,
         consecutiveMistakes,
         mascotMood,

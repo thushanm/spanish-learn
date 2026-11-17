@@ -75,6 +75,17 @@ export interface MistakeWordRecord {
   lastFailedDate: string;
 }
 
+export interface ReminderWordRecord {
+  id: string;
+  spanish: string;
+  phonetic: string;
+  english: string;
+  exampleSentence?: string;
+  sourceContext?: string;
+  dateAdded: string;
+  level?: string;
+}
+
 export interface AccuracySessionRecord {
   date: string;
   accuracy: number;

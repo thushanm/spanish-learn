@@ -13,7 +13,8 @@ import {
   Sparkles,
   BarChart3,
   Clapperboard,
-  Scroll
+  Scroll,
+  Bookmark
 } from 'lucide-react';
 import { playClickSound } from '../utils/soundEffects';
 import { soundEffects } from '../utils/useSoundEffects';
@@ -23,7 +24,7 @@ interface CortexNavbarProps {
 }
 
 export const CortexNavbar: React.FC<CortexNavbarProps> = ({ onOpenSettings }) => {
-  const { stats, updateSettings, activeTab, setActiveTab } = useApp();
+  const { stats, updateSettings, activeTab, setActiveTab, reminderWords } = useApp();
 
   const handleTab = (tab: any) => {
     playClickSound(stats.soundEnabled);
@@ -161,6 +162,23 @@ export const CortexNavbar: React.FC<CortexNavbarProps> = ({ onOpenSettings }) =>
               <span>{stats.streak > 0 ? `${stats.streak}d` : '1d'}</span>
             </div>
 
+            {/* Reminders Vault Pill Button */}
+            <button
+              onClick={() => handleTab('reminders')}
+              title="Saved reminder words vault"
+              className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                activeTab === 'reminders'
+                  ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-md font-black'
+                  : 'bg-amber-950/60 border-amber-500/30 text-amber-300 hover:bg-amber-900/40'
+              }`}
+            >
+              <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Reminders</span>
+              <span className="text-[10px] px-1 py-0.2 rounded-md bg-amber-500/20 text-amber-300 font-mono">
+                {reminderWords.length}
+              </span>
+            </button>
+
             {/* Sound Toggle */}
             <button
               onClick={toggleSound}
@@ -209,7 +227,7 @@ export const MobileBottomNav: React.FC = () => {
     { id: 'cinema', label: 'Cinema', icon: Clapperboard, activeColor: 'text-rose-500' },
     { id: 'practice', label: 'Speak', icon: Mic, activeColor: 'text-emerald-500', isCenter: true },
     { id: 'stories', label: 'Stories', icon: Scroll, activeColor: 'text-blue-500' },
-    { id: 'builder', label: 'Build', icon: Puzzle, activeColor: 'text-purple-500' },
+    { id: 'reminders', label: 'Vault', icon: Bookmark, activeColor: 'text-amber-500' },
   ];
 
   return (

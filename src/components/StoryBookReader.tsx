@@ -16,19 +16,16 @@ import {
   Sparkles,
   Brain,
   Award,
-  Globe2,
-  Eye,
-  EyeOff,
-  Flame,
-  Check,
   HelpCircle,
-  X
+  Eye,
+  Flame,
+  ArrowLeft
 } from 'lucide-react';
 import {
   SPANISH_STORIES,
   SpanishStory,
   StorySentence,
-  StoryWordDetail
+  AlignedWordPair
 } from '../data/storyBooksData';
 import { useApp } from '../context/AppContext';
 import { speakSpanish, stopSpeaking } from '../utils/speech';
@@ -39,10 +36,9 @@ import { soundEffects } from '../utils/useSoundEffects';
 
 const STORAGE_ACTIVE_STORY_KEY = 'jtm_story_active_id';
 const STORAGE_COMPLETED_STORIES_KEY = 'jtm_completed_stories';
-const STORAGE_SAVED_WORDS_KEY = 'jtm_saved_story_words';
 
 export const StoryBookReader: React.FC = () => {
-  const { stats, addXP, setMascotMood, triggerGameAction } = useApp();
+  const { stats, addXP, setMascotMood, triggerGameAction, addReminderWord, setActiveTab } = useApp();
 
   // Active Story selection
   const [selectedStoryId, setSelectedStoryId] = useState<string>(() => {
@@ -63,42 +59,33 @@ export const StoryBookReader: React.FC = () => {
     return [];
   });
 
-  const [savedWords, setSavedWords] = useState<StoryWordDetail[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_SAVED_WORDS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [];
-  });
+  // User explicitly requested: default to 'library' first so user can choose from 10 stories!
+  const [viewMode, setViewMode] = useState<'library' | 'reader'>('library');
+  const [levelFilter, setLevelFilter] = useState<'ALL' | 'A1' | 'A2' | 'B1' | 'B2'>('ALL');
 
-  // Current Story object
   const currentStory: SpanishStory = useMemo(() => {
     return SPANISH_STORIES.find(s => s.id === selectedStoryId) || SPANISH_STORIES[0];
   }, [selectedStoryId]);
 
-  // View state: 'library' | 'reader'
-  const [viewMode, setViewMode] = useState<'reader' | 'library'>('reader');
-  const [levelFilter, setLevelFilter] = useState<'ALL' | 'A1' | 'A2' | 'B1' | 'B2'>('ALL');
-
-  // Narration & Audio state
+  // Audio & Narration state
   const [isNarrating, setIsNarrating] = useState(false);
-  const [narrationRate, setNarrationRate] = useState<number>(0.85); // 0.85x default for storytelling clarity
+  const [narrationRate, setNarrationRate] = useState<number>(0.85);
   const [preferredAccent, setPreferredAccent] = useState<'es-ES' | 'es-MX'>(currentStory.accent);
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number>(0);
 
-  // Flattened list of sentences for linear read-along
+  // Flattened sentences for read-along
   const allSentences = useMemo(() => {
     return currentStory.paragraphs.flatMap(p => p.sentences);
   }, [currentStory]);
 
-  const activeSentence: StorySentence | undefined = allSentences[activeSentenceIndex];
+  // Two-way interactive cross-highlighting
+  // highlightedPairId: matches both the Spanish word and English word in the sentence!
+  const [highlightedPairId, setHighlightedPairId] = useState<string | null>(null);
+  const [inspectedWordPair, setInspectedWordPair] = useState<AlignedWordPair | null>(null);
 
-  // Word inspector card state
-  const [selectedWord, setSelectedWord] = useState<StoryWordDetail | null>(null);
-
-  // Translation visibility toggles
-  const [showAllEnglish, setShowAllEnglish] = useState(false);
-  const [revealedSentences, setRevealedSentences] = useState<Record<string, boolean>>({});
+  // Long press timer ref for saving to Reminders
+  const longPressTimerRef = useRef<number | null>(null);
+  const [longPressActiveId, setLongPressActiveId] = useState<string | null>(null);
 
   // Groq AI Sentence Explainer
   const [aiModalSentence, setAiModalSentence] = useState<StorySentence | null>(null);
@@ -110,40 +97,38 @@ export const StoryBookReader: React.FC = () => {
   const [quizScore, setQuizScore] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
-  // Narration timeout ref
   const narrationTimeoutRef = useRef<number | null>(null);
   const sentenceRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Save active story ID
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_ACTIVE_STORY_KEY, selectedStoryId);
     } catch (e) {}
   }, [selectedStoryId]);
 
-  // Update preferred accent when story changes
   useEffect(() => {
     setPreferredAccent(currentStory.accent);
     stopNarration();
     setActiveSentenceIndex(0);
-    setSelectedWord(null);
-    setRevealedSentences({});
+    setHighlightedPairId(null);
+    setInspectedWordPair(null);
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizScore(null);
   }, [currentStory.id]);
 
-  // Clean up audio on unmount
   useEffect(() => {
     return () => {
       stopSpeaking();
       if (narrationTimeoutRef.current) {
         window.clearTimeout(narrationTimeoutRef.current);
       }
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
+      }
     };
   }, []);
 
-  // Stop narration helper
   const stopNarration = () => {
     stopSpeaking();
     setIsNarrating(false);
@@ -153,10 +138,8 @@ export const StoryBookReader: React.FC = () => {
     }
   };
 
-  // Play a specific sentence by index with callback to advance
   const playSentenceByIndex = (index: number, continuous: boolean = true) => {
     if (index >= allSentences.length) {
-      // Reached the end of the story!
       stopNarration();
       soundEffects.playFanfare();
       setMascotMood('celebrate_finish');
@@ -167,10 +150,9 @@ export const StoryBookReader: React.FC = () => {
     const sentence = allSentences[index];
     if (!sentence) return;
 
-    // Smooth scroll into view
-    const targetElement = sentenceRefs.current[sentence.id];
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const el = sentenceRefs.current[sentence.id];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     if (stats.soundEnabled) {
@@ -181,17 +163,14 @@ export const StoryBookReader: React.FC = () => {
           if (continuous && isNarrating) {
             narrationTimeoutRef.current = window.setTimeout(() => {
               playSentenceByIndex(index + 1, true);
-            }, 550); // Natural breathing pause between story sentences
+            }, 600);
           }
         },
-        onError: () => {
-          stopNarration();
-        }
+        onError: () => stopNarration()
       });
     }
   };
 
-  // Start or Toggle Continuous Narration
   const toggleNarration = () => {
     soundEffects.playClick();
     if (isNarrating) {
@@ -202,7 +181,6 @@ export const StoryBookReader: React.FC = () => {
     }
   };
 
-  // Replay Story from start
   const handleRestartStory = () => {
     soundEffects.playClick();
     stopNarration();
@@ -210,59 +188,47 @@ export const StoryBookReader: React.FC = () => {
     playSentenceByIndex(0, false);
   };
 
-  // Play a single sentence without continuous advance
-  const handlePlaySingleSentence = (sentence: StorySentence, index: number) => {
-    soundEffects.playClick();
-    stopNarration();
-    setActiveSentenceIndex(index);
-    if (stats.soundEnabled) {
-      speakSpanish(sentence.spanish, {
-        rate: narrationRate,
-        preferredAccent
-      });
-    }
-  };
-
-  // Handle word click inspection
-  const handleWordClick = (wordObj: StoryWordDetail, sentence: StorySentence) => {
+  // Two-way interactive cross-highlight trigger
+  // Clicking either Spanish word or English word highlights BOTH and speaks Spanish pronunciation!
+  const handleWordClick = (pair: AlignedWordPair) => {
     soundEffects.playSnap();
-    setSelectedWord(wordObj);
+    setHighlightedPairId(pair.id);
+    setInspectedWordPair(pair);
 
-    // Speak single word slowly
     if (stats.soundEnabled) {
-      speakSpanish(wordObj.word, {
-        rate: 0.72,
+      speakSpanish(pair.spanish, {
+        rate: 0.75,
         preferredAccent
       });
     }
   };
 
-  // Save/Unsave word to vocabulary list
-  const toggleSaveWord = (word: StoryWordDetail) => {
-    soundEffects.playBubblePop();
-    const isAlreadySaved = savedWords.some(w => w.cleanWord === word.cleanWord);
-    let next: StoryWordDetail[];
-    if (isAlreadySaved) {
-      next = savedWords.filter(w => w.cleanWord !== word.cleanWord);
-    } else {
-      next = [...savedWords, word];
+  // 1.5 - 2 Second Long-Press Handler: Saves word to Reminders Vault
+  const handleWordTouchStart = (pair: AlignedWordPair, sentenceText: string) => {
+    setLongPressActiveId(pair.id);
+    longPressTimerRef.current = window.setTimeout(() => {
+      // Trigger long-press save to Reminders Vault!
+      addReminderWord({
+        spanish: pair.spanish,
+        phonetic: pair.phonetic,
+        english: pair.english || pair.meaning,
+        exampleSentence: sentenceText,
+        sourceContext: currentStory.title,
+        level: currentStory.level
+      });
+      setLongPressActiveId(null);
+    }, 1400); // 1.4s comfortable long press
+  };
+
+  const handleWordTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
-    setSavedWords(next);
-    try {
-      localStorage.setItem(STORAGE_SAVED_WORDS_KEY, JSON.stringify(next));
-    } catch (e) {}
+    setLongPressActiveId(null);
   };
 
-  // Toggle single sentence translation
-  const toggleSentenceTranslation = (id: string) => {
-    soundEffects.playClick();
-    setRevealedSentences(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
-  // Groq AI Sentence Explainer Trigger
+  // AI Sentence Explainer
   const handleExplainSentenceWithGroq = async (sentence: StorySentence) => {
     soundEffects.playBoing();
     setAiModalSentence(sentence);
@@ -284,7 +250,7 @@ export const StoryBookReader: React.FC = () => {
     }
   };
 
-  // Comprehension Quiz submission
+  // Comprehension Quiz
   const handleSelectQuizOption = (questionId: string, optionIndex: number) => {
     soundEffects.playSnap();
     setQuizAnswers(prev => ({
@@ -307,7 +273,6 @@ export const StoryBookReader: React.FC = () => {
     setQuizSubmitted(true);
 
     if (score >= 66) {
-      // Success!
       confetti({
         particleCount: 50,
         spread: 70,
@@ -331,20 +296,11 @@ export const StoryBookReader: React.FC = () => {
     }
   };
 
-  // Story selector from library
-  const handleChooseStory = (storyId: string) => {
-    soundEffects.playBubblePop();
-    setSelectedStoryId(storyId);
-    setViewMode('reader');
-  };
-
-  // Filtered stories for library
   const filteredStories = useMemo(() => {
     if (levelFilter === 'ALL') return SPANISH_STORIES;
     return SPANISH_STORIES.filter(s => s.level === levelFilter);
   }, [levelFilter]);
 
-  // Overall reading progress %
   const readingProgress = Math.round(
     ((activeSentenceIndex + 1) / Math.max(1, allSentences.length)) * 100
   );
@@ -363,39 +319,45 @@ export const StoryBookReader: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Spanish Storybook Reader
+                  Spanish Storybooks (Librería)
                 </h1>
                 <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  Librería de Cuentos
+                  10 Interactive Stories
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-bold mt-0.5">
-                Immersive stories with read-along audio, tap-to-inspect words, and Groq AI grammar insights!
+                Two-way word cross-highlighting, full audio narration, and 1.5s long-press to save any word to Reminders!
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                soundEffects.playClick();
-                setViewMode(viewMode === 'reader' ? 'library' : 'reader');
-              }}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-black text-slate-200 hover:bg-slate-800 transition-all cursor-pointer shadow-md"
-            >
-              <BookOpen className="w-4 h-4 text-sky-400" />
-              <span>{viewMode === 'reader' ? 'Browse All Stories' : 'Back to Reading'}</span>
-            </button>
+            {viewMode === 'reader' && (
+              <button
+                onClick={() => {
+                  soundEffects.playClick();
+                  stopNarration();
+                  setViewMode('library');
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-black text-slate-200 hover:bg-slate-800 transition-all cursor-pointer shadow-md"
+              >
+                <ArrowLeft className="w-4 h-4 text-sky-400" />
+                <span>All 10 Stories</span>
+              </button>
+            )}
 
-            <span className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs font-black">
-              <Award className="w-4 h-4 text-purple-400" />
-              <span>{completedStories.length}/{SPANISH_STORIES.length} Read</span>
-            </span>
+            <button
+              onClick={() => setActiveTab('reminders')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-300 text-xs font-black hover:bg-amber-900/50 transition-colors"
+            >
+              <Bookmark className="w-4 h-4 text-amber-400" />
+              <span>Reminders Vault</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* VIEW MODE 1: STORY LIBRARY */}
+      {/* VIEW 1: STORY SELECTION LIBRARY (10 Stories Grid) */}
       {viewMode === 'library' && (
         <div className="space-y-5">
           {/* Level Filter Tabs */}
@@ -413,12 +375,12 @@ export const StoryBookReader: React.FC = () => {
                     : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
-                {lvl === 'ALL' ? 'All Stories' : `Level ${lvl}`}
+                {lvl === 'ALL' ? 'All 10 Stories' : `Level ${lvl}`}
               </button>
             ))}
           </div>
 
-          {/* Story Cards Grid */}
+          {/* 10 Story Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredStories.map(story => {
               const isCurrent = story.id === currentStory.id;
@@ -427,21 +389,25 @@ export const StoryBookReader: React.FC = () => {
               return (
                 <div
                   key={story.id}
-                  onClick={() => handleChooseStory(story.id)}
-                  className={`group relative overflow-hidden rounded-[24px] border-2 transition-all p-5 flex flex-col justify-between cursor-pointer shadow-lg hover:scale-[1.02] ${
+                  onClick={() => {
+                    soundEffects.playBubblePop();
+                    setSelectedStoryId(story.id);
+                    setViewMode('reader');
+                  }}
+                  className={`group relative overflow-hidden rounded-[26px] border-2 transition-all p-5 flex flex-col justify-between cursor-pointer shadow-lg hover:scale-[1.02] ${
                     isCurrent
                       ? 'bg-blue-950/40 border-sky-400 shadow-blue-500/20'
-                      : 'bg-[#121927]/90 border-slate-700/60 hover:border-slate-600'
+                      : 'bg-[#121927]/90 border-slate-700/60 hover:border-slate-500'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-3xl">{story.coverEmoji}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-black">
+                        <span className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-black">
                           {story.country}
                         </span>
-                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-black">
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-black">
                           {story.level}
                         </span>
                         {isDone && (
@@ -465,7 +431,7 @@ export const StoryBookReader: React.FC = () => {
                   <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>⏱️ ~{story.readTimeMinutes} min read</span>
                     <span className="text-sky-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      Read Now <ChevronRight className="w-3.5 h-3.5" />
+                      Read Story <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </div>
@@ -475,12 +441,12 @@ export const StoryBookReader: React.FC = () => {
         </div>
       )}
 
-      {/* VIEW MODE 2: ACTIVE STORY READER */}
+      {/* VIEW 2: ACTIVE STORY READER */}
       {viewMode === 'reader' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
-          {/* Main Story Reading Column (8 cols) */}
+          {/* Main Story Canvas (8 cols) */}
           <div className="lg:col-span-8 space-y-4 sm:space-y-5">
-            {/* Story Title & Meta Card */}
+            {/* Story Header & Title Card */}
             <div className="rounded-[24px] border-2 border-slate-700/60 bg-[#121927]/90 backdrop-blur-xl p-4 sm:p-6 shadow-xl space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -503,18 +469,20 @@ export const StoryBookReader: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowAllEnglish(!showAllEnglish)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-black text-sky-400 hover:text-sky-300 transition-colors"
-                  >
-                    {showAllEnglish ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showAllEnglish ? 'Hide English' : 'Show All English'}</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    soundEffects.playClick();
+                    stopNarration();
+                    setViewMode('library');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-black text-sky-400 hover:text-sky-300"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Choose Another Story</span>
+                </button>
               </div>
 
-              {/* Progress Bar of Story */}
+              {/* Progress Bar */}
               <div className="pt-2">
                 <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1">
                   <span>Reading Progress</span>
@@ -529,15 +497,14 @@ export const StoryBookReader: React.FC = () => {
               </div>
             </div>
 
-            {/* Narration Floating Dock / Audio Bar */}
+            {/* Read-Along Audio Bar */}
             <div className="sticky top-16 z-30 rounded-2xl border border-slate-700/80 bg-[#0E1524]/95 backdrop-blur-xl p-3 sm:p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
-              {/* Play / Pause Narration */}
               <div className="flex items-center gap-2">
                 <TactileButton
                   variant={isNarrating ? 'cyan' : 'candy-green'}
                   size="sm"
                   onClick={toggleNarration}
-                  className="min-w-[140px]"
+                  className="min-w-[130px]"
                 >
                   {isNarrating ? (
                     <>
@@ -554,14 +521,14 @@ export const StoryBookReader: React.FC = () => {
 
                 <button
                   onClick={handleRestartStory}
-                  title="Restart Story Audio from Beginning"
+                  title="Restart Audio from sentence 1"
                   className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4 text-amber-400" />
                 </button>
               </div>
 
-              {/* Speech Speed & Accent Controls */}
+              {/* Speed controls */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
                   {[
@@ -586,13 +553,11 @@ export const StoryBookReader: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Accent switch */}
                 <button
                   onClick={() => {
                     soundEffects.playSnap();
                     setPreferredAccent(preferredAccent === 'es-ES' ? 'es-MX' : 'es-ES');
                   }}
-                  title="Switch between Spain 🇪🇸 and Mexico 🇲🇽 Spanish accent"
                   className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-black text-slate-200 hover:bg-slate-800 transition-colors"
                 >
                   {preferredAccent === 'es-ES' ? '🇪🇸 Spain' : '🇲🇽 Mexico'}
@@ -600,90 +565,113 @@ export const StoryBookReader: React.FC = () => {
               </div>
             </div>
 
-            {/* Story Paragraphs Canvas */}
+            {/* Paragraphs with Two-Way Word Cross-Highlighting */}
             <div className="space-y-6">
               {currentStory.paragraphs.map(paragraph => (
                 <div
                   key={paragraph.id}
-                  className="rounded-[26px] border-2 border-slate-800/80 bg-[#0E1524]/80 p-5 sm:p-7 shadow-lg space-y-4"
+                  className="rounded-[26px] border-2 border-slate-800/80 bg-[#0E1524]/80 p-5 sm:p-7 shadow-lg space-y-5"
                 >
                   {paragraph.sentences.map(sentence => {
                     const sentenceIndex = allSentences.findIndex(s => s.id === sentence.id);
-                    const isActive = isNarrating && activeSentenceIndex === sentenceIndex;
-                    const isRevealed = showAllEnglish || revealedSentences[sentence.id];
+                    const isActiveSentence = isNarrating && activeSentenceIndex === sentenceIndex;
 
                     return (
                       <div
                         key={sentence.id}
                         ref={el => { sentenceRefs.current[sentence.id] = el; }}
-                        className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
-                          isActive
+                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                          isActiveSentence
                             ? 'bg-blue-950/60 border-sky-400 shadow-lg shadow-sky-500/20 ring-2 ring-sky-400/30'
-                            : 'bg-transparent border-transparent hover:border-slate-800 hover:bg-slate-900/40'
+                            : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700'
                         }`}
                       >
-                        {/* Sentence Spanish Word Chips */}
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-base sm:text-lg leading-relaxed">
-                          {sentence.vocab.map((vocabItem, vIdx) => {
-                            const isSelected = selectedWord && selectedWord.cleanWord === vocabItem.cleanWord;
+                        {/* 1. Spanish Sentence Word Chips (Interactive Two-Way Cross-Highlight + 1.5s Long Press to Save) */}
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 block mb-1">
+                            Spanish (Tap word to inspect · Hold 1.5s to save)
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-base sm:text-lg leading-relaxed font-bold">
+                            {sentence.wordPairs.map(pair => {
+                              const isCrossHighlighted = highlightedPairId === pair.id;
+                              const isBeingLongPressed = longPressActiveId === pair.id;
 
-                            return (
+                              return (
+                                <button
+                                  key={pair.id}
+                                  onClick={() => handleWordClick(pair)}
+                                  onMouseDown={() => handleWordTouchStart(pair, sentence.spanish)}
+                                  onMouseUp={handleWordTouchEnd}
+                                  onTouchStart={() => handleWordTouchStart(pair, sentence.spanish)}
+                                  onTouchEnd={handleWordTouchEnd}
+                                  title={`Tap to hear & cross-highlight "${pair.spanish}" | Hold 1.5s to save to Reminders`}
+                                  className={`relative px-2 py-0.5 rounded-xl transition-all cursor-pointer border select-none ${
+                                    isCrossHighlighted
+                                      ? 'bg-amber-400 text-slate-950 border-amber-500 font-black shadow-md shadow-amber-400/30 scale-105'
+                                      : isBeingLongPressed
+                                      ? 'bg-emerald-500 text-white border-emerald-400 scale-110 animate-pulse'
+                                      : 'bg-slate-800/80 text-white border-slate-700 hover:bg-sky-500/20 hover:text-sky-300'
+                                  }`}
+                                >
+                                  {pair.spanish}
+                                </button>
+                              );
+                            })}
+
+                            {/* Sentence Tools */}
+                            <div className="inline-flex items-center gap-1 ml-2">
                               <button
-                                key={vIdx}
-                                onClick={() => handleWordClick(vocabItem, sentence)}
-                                title={`Tap to inspect "${vocabItem.word}"`}
-                                className={`px-2 py-0.5 rounded-lg text-left transition-all cursor-pointer font-bold ${
-                                  isSelected
-                                    ? 'bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-400/30 scale-105'
-                                    : 'text-slate-100 hover:bg-sky-500/20 hover:text-sky-300 hover:underline decoration-sky-400/50'
-                                }`}
+                                onClick={() => {
+                                  soundEffects.playClick();
+                                  stopNarration();
+                                  setActiveSentenceIndex(sentenceIndex);
+                                  if (stats.soundEnabled) {
+                                    speakSpanish(sentence.spanish, { rate: narrationRate, preferredAccent });
+                                  }
+                                }}
+                                title="Listen to this sentence aloud"
+                                className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sky-400 hover:bg-slate-800 transition-colors"
                               >
-                                {vocabItem.word}
+                                <Volume2 className="w-3.5 h-3.5" />
                               </button>
-                            );
-                          })}
 
-                          {/* Sentence Controls (Play, Translate, Groq AI) */}
-                          <div className="inline-flex items-center gap-1 ml-2 shrink-0">
-                            <button
-                              onClick={() => handlePlaySingleSentence(sentence, sentenceIndex)}
-                              title="Listen to this sentence"
-                              className="p-1.5 rounded-lg bg-slate-900 border border-slate-700/60 text-sky-400 hover:bg-slate-800 transition-colors"
-                            >
-                              <Volume2 className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              onClick={() => toggleSentenceTranslation(sentence.id)}
-                              title="Toggle English translation"
-                              className="p-1.5 rounded-lg bg-slate-900 border border-slate-700/60 text-slate-400 hover:text-white transition-colors"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              onClick={() => handleExplainSentenceWithGroq(sentence)}
-                              title="Explain sentence grammar with Groq AI"
-                              className="p-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/50 transition-colors"
-                            >
-                              <Brain className="w-3.5 h-3.5" />
-                            </button>
+                              <button
+                                onClick={() => handleExplainSentenceWithGroq(sentence)}
+                                title="Explain sentence grammar with Groq AI"
+                                className="p-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/50 transition-colors"
+                              >
+                                <Brain className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Sentence English Translation */}
-                        <AnimatePresence>
-                          {isRevealed && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="mt-2.5 pt-2 border-t border-slate-800/80 text-xs sm:text-sm text-slate-400 font-medium italic"
-                            >
-                              &ldquo;{sentence.english}&rdquo;
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                        {/* 2. English Sentence Word Chips (Interactive Two-Way Cross-Highlight) */}
+                        <div className="pt-2 border-t border-slate-800/80">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
+                            English Translation (Tap word to see Spanish match)
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 text-xs sm:text-sm leading-relaxed">
+                            {sentence.wordPairs.map(pair => {
+                              const isCrossHighlighted = highlightedPairId === pair.id;
+
+                              return (
+                                <button
+                                  key={pair.id}
+                                  onClick={() => handleWordClick(pair)}
+                                  title={`Tap to hear Spanish pronunciation for "${pair.english}"`}
+                                  className={`px-1.5 py-0.5 rounded-md transition-all cursor-pointer select-none ${
+                                    isCrossHighlighted
+                                      ? 'bg-amber-400 text-slate-950 font-black shadow-sm scale-105'
+                                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {pair.english}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -691,7 +679,7 @@ export const StoryBookReader: React.FC = () => {
               ))}
             </div>
 
-            {/* Comprehension Check Quiz at Story End */}
+            {/* Comprehension Check Quiz */}
             <div className="rounded-[28px] border-2 border-indigo-500/40 bg-gradient-to-b from-[#13172E] to-[#0E1324] p-5 sm:p-7 shadow-xl space-y-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -714,14 +702,14 @@ export const StoryBookReader: React.FC = () => {
               </div>
 
               {/* Questions */}
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {currentStory.comprehensionQuiz.map((q, qIdx) => {
                   const selectedOpt = quizAnswers[q.id];
 
                   return (
                     <div
                       key={q.id}
-                      className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3"
+                      className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2.5"
                     >
                       <div className="text-xs font-black text-indigo-300 uppercase tracking-wider">
                         Question {qIdx + 1}
@@ -729,11 +717,7 @@ export const StoryBookReader: React.FC = () => {
                       <div className="text-sm font-bold text-white">
                         {q.question}
                       </div>
-                      <div className="text-xs text-slate-400 italic">
-                        {q.questionSpanish}
-                      </div>
 
-                      {/* Options */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                         {q.options.map((opt, optIdx) => {
                           const isPicked = selectedOpt === optIdx;
@@ -772,7 +756,7 @@ export const StoryBookReader: React.FC = () => {
                 })}
               </div>
 
-              {/* Submit Quiz button */}
+              {/* Submit Quiz */}
               <div className="flex items-center justify-between pt-2">
                 {quizScore !== null ? (
                   <div className="text-sm font-black text-emerald-300 flex items-center gap-2">
@@ -781,7 +765,7 @@ export const StoryBookReader: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-xs text-slate-400">
-                    Select answers above and click grade
+                    Select your answers above
                   </div>
                 )}
 
@@ -792,31 +776,34 @@ export const StoryBookReader: React.FC = () => {
                   className="shadow-lg shadow-emerald-500/20"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>{quizSubmitted ? 'Re-check Answers' : 'Submit Quiz (+50 XP)'}</span>
+                  <span>{quizSubmitted ? 'Re-grade Quiz' : 'Submit Quiz (+50 XP)'}</span>
                 </TactileButton>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Word Inspector, Saved Vocabulary & Mascot (4 cols) */}
+          {/* Right Column: Two-Way Word Inspector & Mascot Chico (4 cols) */}
           <div className="lg:col-span-4 space-y-4 sm:space-y-5">
-            {/* Expressive Cartoon Mascot Chico */}
+            {/* Mascot */}
             <div className="rounded-[24px] border-2 border-slate-700/60 bg-[#121927]/90 backdrop-blur-xl p-3 shadow-xl">
               <CartoonMascot compact={true} />
             </div>
 
-            {/* Word Inspector Card */}
+            {/* Word Cross-Highlight Inspector Card */}
             <div className="rounded-[24px] border-2 border-amber-500/40 bg-[#121927]/90 backdrop-blur-xl p-4 sm:p-5 shadow-xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-amber-400" />
                   <h3 className="text-xs font-black uppercase tracking-wider text-amber-300">
-                    Word Inspector (Tap any word)
+                    Two-Way Word Inspector
                   </h3>
                 </div>
-                {selectedWord && (
+                {inspectedWordPair && (
                   <button
-                    onClick={() => setSelectedWord(null)}
+                    onClick={() => {
+                      setHighlightedPairId(null);
+                      setInspectedWordPair(null);
+                    }}
                     className="text-xs text-slate-400 hover:text-white"
                   >
                     ✕
@@ -824,117 +811,79 @@ export const StoryBookReader: React.FC = () => {
                 )}
               </div>
 
-              {selectedWord ? (
+              {inspectedWordPair ? (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-lg font-black text-amber-400">
-                        {selectedWord.word}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xl font-black text-amber-400">
+                          {inspectedWordPair.spanish}
+                        </h4>
+                        <span className="text-sm font-bold text-slate-300">
+                          = &ldquo;{inspectedWordPair.english}&rdquo;
+                        </span>
+                      </div>
                       <span className="text-[11px] font-bold text-slate-400">
-                        {selectedWord.partOfSpeech}
+                        {inspectedWordPair.partOfSpeech || 'Vocabulary Word'}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => {
                           if (stats.soundEnabled) {
-                            speakSpanish(selectedWord.word, { rate: 0.72, preferredAccent });
+                            speakSpanish(inspectedWordPair.spanish, { rate: 0.72, preferredAccent });
                           }
                         }}
-                        title="Pronounce word slowly"
+                        title="Pronounce word"
                         className="p-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
                       >
                         <Volume2 className="w-4 h-4" />
                       </button>
 
                       <button
-                        onClick={() => toggleSaveWord(selectedWord)}
-                        title={savedWords.some(w => w.cleanWord === selectedWord.cleanWord) ? 'Remove bookmark' : 'Save to my vocabulary'}
-                        className={`p-2 rounded-xl border transition-colors ${
-                          savedWords.some(w => w.cleanWord === selectedWord.cleanWord)
-                            ? 'bg-amber-400 text-slate-950 border-amber-500'
-                            : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'
-                        }`}
+                        onClick={() => {
+                          addReminderWord({
+                            spanish: inspectedWordPair.spanish,
+                            phonetic: inspectedWordPair.phonetic,
+                            english: inspectedWordPair.english || inspectedWordPair.meaning,
+                            exampleSentence: currentStory.title,
+                            level: currentStory.level
+                          });
+                        }}
+                        title="Save to Reminders Vault"
+                        className="p-2 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 transition-colors"
                       >
                         <Bookmark className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
+                  <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
                     <div>
                       <span className="font-bold text-slate-400">Meaning: </span>
-                      <span className="text-white font-bold">{selectedWord.meaning}</span>
+                      <span className="text-white font-bold">{inspectedWordPair.meaning}</span>
                     </div>
                     <div>
                       <span className="font-bold text-slate-400">Pronunciation: </span>
-                      <span className="text-amber-300 font-mono">[{selectedWord.phonetic}]</span>
+                      <span className="text-amber-300 font-mono">[{inspectedWordPair.phonetic}]</span>
                     </div>
-                    {selectedWord.note && (
+                    {inspectedWordPair.note && (
                       <div className="text-slate-300 italic pt-1 border-t border-slate-800/80">
-                        💡 {selectedWord.note}
+                        💡 {inspectedWordPair.note}
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 leading-relaxed font-bold py-2">
-                  Tap any Spanish word inside the story to hear slow native audio, see its English definition, and inspect grammar!
-                </p>
-              )}
-            </div>
-
-            {/* Saved Story Vocabulary List */}
-            <div className="rounded-[24px] border-2 border-slate-700/60 bg-[#121927]/90 backdrop-blur-xl p-4 sm:p-5 shadow-xl space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bookmark className="w-4 h-4 text-sky-400" />
-                  <h3 className="text-xs font-black uppercase tracking-wider text-sky-300">
-                    Bookmarked Words ({savedWords.length})
-                  </h3>
+                <div className="space-y-2 py-2">
+                  <p className="text-xs text-slate-300 leading-relaxed font-bold">
+                    💡 <strong>Tap any word</strong> (Spanish or English) to cross-highlight both words simultaneously and hear native audio!
+                  </p>
+                  <p className="text-xs text-amber-300 leading-relaxed font-bold">
+                    📌 <strong>Hold down for 1.5s</strong> on any Spanish word to automatically send it to your Reminders Vault!
+                  </p>
                 </div>
-              </div>
-
-              {savedWords.length > 0 ? (
-                <div className="space-y-2 max-h-56 overflow-y-auto scrollbar-none">
-                  {savedWords.map((word, wIdx) => (
-                    <div
-                      key={wIdx}
-                      className="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs"
-                    >
-                      <div>
-                        <span className="font-black text-amber-300">{word.word}</span>
-                        <span className="text-slate-400 block text-[11px] truncate max-w-[150px]">
-                          {word.meaning}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => {
-                            if (stats.soundEnabled) {
-                              speakSpanish(word.word, { rate: 0.75, preferredAccent });
-                            }
-                          }}
-                          className="p-1.5 rounded-lg text-sky-400 hover:bg-slate-800"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => toggleSaveWord(word)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500 font-bold">
-                  No bookmarked words yet. Tap the bookmark icon on any inspected word to review it anytime!
-                </p>
               )}
             </div>
           </div>
@@ -951,7 +900,6 @@ export const StoryBookReader: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-[28px] border-2 border-purple-500/60 bg-[#0E1524] p-5 sm:p-7 shadow-2xl space-y-4 text-slate-100"
             >
-              {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
@@ -975,7 +923,6 @@ export const StoryBookReader: React.FC = () => {
                 </button>
               </div>
 
-              {/* Target Sentence Box */}
               <div className="p-4 rounded-2xl bg-[#0B0F19] border border-slate-800 space-y-1">
                 <div className="text-sm sm:text-base font-bold text-white">
                   &ldquo;{aiModalSentence.spanish}&rdquo;
@@ -985,7 +932,6 @@ export const StoryBookReader: React.FC = () => {
                 </div>
               </div>
 
-              {/* Loading State */}
               {isAnalyzingAi && (
                 <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
                   <div className="w-10 h-10 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin" />
@@ -995,10 +941,8 @@ export const StoryBookReader: React.FC = () => {
                 </div>
               )}
 
-              {/* Result */}
               {!isAnalyzingAi && aiExplanation && (
                 <div className="space-y-3.5 text-xs sm:text-sm">
-                  {/* Grammar Breakdown */}
                   <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 space-y-1.5">
                     <span className="text-[11px] font-black uppercase text-purple-300 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-purple-400" />
@@ -1009,7 +953,6 @@ export const StoryBookReader: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Idioms and Nuances */}
                   <div className="p-4 rounded-2xl bg-sky-950/40 border border-sky-500/30 space-y-1.5">
                     <span className="text-[11px] font-black uppercase text-sky-300 flex items-center gap-1.5">
                       <Flame className="w-3.5 h-3.5 text-amber-400" />
@@ -1022,7 +965,6 @@ export const StoryBookReader: React.FC = () => {
                     </ul>
                   </div>
 
-                  {/* Simplified Spanish Alternative */}
                   <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 space-y-1.5">
                     <span className="text-[11px] font-black uppercase text-emerald-300 flex items-center gap-1.5">
                       <BookOpen className="w-3.5 h-3.5 text-emerald-400" />

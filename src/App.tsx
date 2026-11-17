@@ -4,6 +4,7 @@ import { CortexNavbar, MobileBottomNav } from './components/CortexNavbar';
 import { LearningHome } from './components/LearningHome';
 import { CinemaSpanishLab } from './components/CinemaSpanishLab';
 import { StoryBookReader } from './components/StoryBookReader';
+import { RemindersVault } from './components/RemindersVault';
 import { AcousticSpeechStudio } from './components/AcousticSpeechStudio';
 import { SentenceBuilderExercise } from './components/SentenceBuilderExercise';
 import { ListeningLabExercise } from './components/ListeningLabExercise';
@@ -18,7 +19,7 @@ import { GameRewardToast } from './components/GameRewardToast';
 import { Brain, Sparkles, ShieldCheck } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { activeTab, gameplayMood, comboStreak } = useApp();
+  const { activeTab, setActiveTab, gameplayMood, comboStreak, reminderToast, dismissReminderToast } = useApp();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Dynamic Mood Backgrounds - Rich, Eye-Pleasing Deep Dark Aesthetics (Zero eye strain)
@@ -59,6 +60,7 @@ const AppContent: React.FC = () => {
         {activeTab === 'roadmap' && <LearningHome />}
         {activeTab === 'cinema' && <CinemaSpanishLab />}
         {activeTab === 'stories' && <StoryBookReader />}
+        {activeTab === 'reminders' && <RemindersVault />}
         {activeTab === 'practice' && <AcousticSpeechStudio />}
         {activeTab === 'builder' && <SentenceBuilderExercise />}
         {activeTab === 'listening' && <ListeningLabExercise />}
@@ -103,6 +105,33 @@ const AppContent: React.FC = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* Floating 2-second Long Press Reminder Toast */}
+      {reminderToast && (
+        <div className="fixed top-20 right-4 z-50 animate-bounce">
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 shadow-2xl font-black text-xs border-2 border-amber-300">
+            <span className="text-xl">📌</span>
+            <div>
+              <div className="text-[10px] uppercase font-black tracking-wider text-amber-950">
+                Saved to Reminders Vault!
+              </div>
+              <div className="text-sm font-black">
+                {reminderToast.word} {reminderToast.meaning ? `— ${reminderToast.meaning}` : ''}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                dismissReminderToast();
+                setActiveTab('reminders');
+              }}
+              className="ml-2 px-2.5 py-1 rounded-xl bg-slate-950 text-amber-300 text-[11px] font-black hover:bg-slate-900"
+            >
+              View Vault
+            </button>
+          </div>
+        </div>
+      )}
+
       <GameRewardToast />
     </div>
   );
