@@ -93,6 +93,12 @@ export interface AccuracySessionRecord {
   xpEarned: number;
 }
 
+export interface DailyUsageRecord {
+  date: string;
+  seconds: number;
+  wordsPracticed: number;
+}
+
 export interface UserStats {
   xp: number;
   streak: number;
@@ -113,6 +119,12 @@ export interface UserStats {
   microphoneDeviceId?: string;
   soundEnabled: boolean;
   autoAdvance: boolean;
+  // Daily Usage & Practice Memory Tracking
+  todayDate: string;
+  dailyStudySecondsToday: number;
+  totalStudySeconds: number;
+  wordsPracticedToday: number;
+  dailyUsageHistory: DailyUsageRecord[];
 }
 
 export interface SpeechScoreResult {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserStats, SpanishWordPhrase, MistakeWordRecord, AccuracySessionRecord, ReminderWordRecord } from '../types';
+import { UserStats, SpanishWordPhrase, MistakeWordRecord, AccuracySessionRecord, ReminderWordRecord, DailyUsageRecord } from '../types';
 import { SPANISH_UNITS } from '../data/spanishData';
 import { soundEffects } from '../utils/useSoundEffects';
 
@@ -56,6 +56,8 @@ interface AppContextType {
   triggerGameAction: (action: 'correct' | 'wrong' | 'complete' | 'reset') => void;
 }
 
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
+
 const DEFAULT_STATS: UserStats = {
   xp: 0,
   streak: 0,
@@ -74,7 +76,12 @@ const DEFAULT_STATS: UserStats = {
   speechRate: 0.95,
   microphoneDeviceId: 'default',
   soundEnabled: true,
-  autoAdvance: false
+  autoAdvance: false,
+  todayDate: getTodayDateString(),
+  dailyStudySecondsToday: 0,
+  totalStudySeconds: 0,
+  wordsPracticedToday: 0,
+  dailyUsageHistory: []
 };
 
 const STORAGE_KEY = 'cortex_spanish_user_stats_v4';
@@ -101,6 +108,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const wordsPracticedCount = typeof parsed.wordsPracticedCount === 'number'
           ? parsed.wordsPracticedCount
           : 0;
+
+        // Daily usage & time check
+        const currentToday = getTodayDateString();
+        const savedDate = typeof parsed.todayDate === 'string' ? parsed.todayDate : currentToday;
+        let dailyStudySecondsToday = typeof parsed.dailyStudySecondsToday === 'number' ? parsed.dailyStudySecondsToday : 0;
+        let wordsPracticedToday = typeof parsed.wordsPracticedToday === 'number' ? parsed.wordsPracticedToday : 0;
+        let totalStudySeconds = typeof parsed.totalStudySeconds === 'number' ? parsed.totalStudySeconds : 0;
+        let dailyUsageHistory = Array.isArray(parsed.dailyUsageHistory) ? parsed.dailyUsageHistory : [];
+
+        // If day has changed, roll over today's data into history
+        if (savedDate !== currentToday) {
+          if (dailyStudySecondsToday > 0 || wordsPracticedToday > 0) {
+            dailyUsageHistory = [
+              { date: savedDate, seconds: dailyStudySecondsToday, wordsPracticed: wordsPracticedToday },
+              ...dailyUsageHistory.slice(0, 13)
+            ];
+          }
+          dailyStudySecondsToday = 0;
+          wordsPracticedToday = 0;
+        }
+
         return {
           ...DEFAULT_STATS,
           ...parsed,
@@ -115,7 +143,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           mistakeWordList: Array.isArray(parsed.mistakeWordList) ? parsed.mistakeWordList : [],
           mistakeWordsCount: Array.isArray(parsed.mistakeWordList) ? parsed.mistakeWordList.length : 0,
           accuracyHistory: Array.isArray(parsed.accuracyHistory) && parsed.accuracyHistory.length > 0 ? parsed.accuracyHistory : DEFAULT_STATS.accuracyHistory,
-          averageAccuracy: typeof parsed.averageAccuracy === 'number' ? parsed.averageAccuracy : 0
+          averageAccuracy: typeof parsed.averageAccuracy === 'number' ? parsed.averageAccuracy : 0,
+          todayDate: currentToday,
+          dailyStudySecondsToday,
+          totalStudySeconds,
+          wordsPracticedToday,
+          dailyUsageHistory
         };
       }
     } catch (e) {
@@ -303,6 +336,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [stats]);
 
+  // Daily Active Study Time tracking (increments every second when app is actively open and visible)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        setStats(prev => {
+          const todayStr = getTodayDateString();
+          if (prev.todayDate !== todayStr) {
+            // Day rolled over at midnight while app is running
+            const historyItem: DailyUsageRecord = {
+              date: prev.todayDate,
+              seconds: prev.dailyStudySecondsToday || 0,
+              wordsPracticed: prev.wordsPracticedToday || 0
+            };
+            return {
+              ...prev,
+              todayDate: todayStr,
+              dailyStudySecondsToday: 1,
+              totalStudySeconds: (prev.totalStudySeconds || 0) + 1,
+              wordsPracticedToday: 0,
+              dailyUsageHistory: [historyItem, ...(prev.dailyUsageHistory || []).slice(0, 13)]
+            };
+          }
+          return {
+            ...prev,
+            dailyStudySecondsToday: (prev.dailyStudySecondsToday || 0) + 1,
+            totalStudySeconds: (prev.totalStudySeconds || 0) + 1
+          };
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const markPracticeDay = (previous: UserStats): Pick<UserStats, 'streak' | 'lastPracticeDate'> => {
     const today = new Date();
     const previousDay = new Date(previous.lastPracticeDate);
@@ -390,6 +456,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         ...markPracticeDay(prev),
         wordsPracticedCount: newCount,
+        wordsPracticedToday: (prev.wordsPracticedToday || 0) + 1,
         wordsLearnedCount: masteredItemIds.length,
         masteredItemIds,
         mistakeWordsCount: newMistakeList.length,
@@ -471,7 +538,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ],
       averageAccuracy: 0,
       completedUnits: [],
-      completedDialogues: []
+      completedDialogues: [],
+      todayDate: getTodayDateString(),
+      dailyStudySecondsToday: 0,
+      totalStudySeconds: 0,
+      wordsPracticedToday: 0,
+      dailyUsageHistory: []
     });
     try {
       localStorage.removeItem(STORAGE_KEY);
