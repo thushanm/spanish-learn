@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { UserStats, SpanishWordPhrase, MistakeWordRecord, AccuracySessionRecord, ReminderWordRecord, DailyUsageRecord } from '../types';
 import { SPANISH_UNITS } from '../data/spanishData';
 import { soundEffects } from '../utils/useSoundEffects';
@@ -54,6 +54,10 @@ interface AppContextType {
   setMascotMood: (mood: CartoonMascotMood) => void;
   gameplayMood: GameplayMood;
   triggerGameAction: (action: 'correct' | 'wrong' | 'complete' | 'reset') => void;
+  // Active Engagement & Smart Study Time Engine
+  isActivelyPracticing: boolean;
+  reportLearningActivity: (activityLabel?: string) => void;
+  setIsMediaPlaying: (playing: boolean) => void;
 }
 
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -336,10 +340,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [stats]);
 
-  // Daily Active Study Time tracking (increments every second when app is actively open and visible)
+  // Active Engagement & Smart Study Time Engine
+  // User Requirement: ONLY calculate time when user is actively practicing, reading stories, watching cinema clips, or building words.
+  // DO NOT count passive time when the app is just sitting open idle!
+  const lastInteractionTimeRef = useRef<number>(Date.now());
+  const [isMediaPlaying, setIsMediaPlaying] = useState<boolean>(false);
+  const [isActivelyPracticing, setIsActivelyPracticing] = useState<boolean>(true);
+
+  const reportLearningActivity = useCallback((_activityLabel?: string) => {
+    lastInteractionTimeRef.current = Date.now();
+    setIsActivelyPracticing(true);
+  }, []);
+
+  // Global activity listeners: any tap, click, keydown, touch anywhere in the app updates last interaction
   useEffect(() => {
+    const onUserActivity = () => {
+      lastInteractionTimeRef.current = Date.now();
+      setIsActivelyPracticing(true);
+    };
+
+    const events: (keyof WindowEventMap)[] = ['pointerdown', 'touchstart', 'click', 'keydown', 'input'];
+    events.forEach(evt => {
+      window.addEventListener(evt, onUserActivity, { passive: true });
+    });
+
+    return () => {
+      events.forEach(evt => {
+        window.removeEventListener(evt, onUserActivity);
+      });
+    };
+  }, []);
+
+  // Smart Study Timer: ONLY ticks when:
+  // 1. Tab/Window is visible AND
+  // 2. User has actively interacted within the last 35 seconds OR Web Speech API is speaking OR video/audio media is playing!
+  // If user leaves the app idle for > 35s with no media/interaction, the timer automatically PAUSES!
+  useEffect(() => {
+    const IDLE_TIMEOUT_MS = 35000; // 35 seconds idle timeout threshold
+
     const timer = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      const now = Date.now();
+      const isDocumentVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
+      const isSpeechActive = typeof window !== 'undefined' && Boolean(window.speechSynthesis && window.speechSynthesis.speaking);
+      const isRecentlyActive = (now - lastInteractionTimeRef.current) < IDLE_TIMEOUT_MS;
+
+      const isEngaged = isDocumentVisible && (isRecentlyActive || isSpeechActive || isMediaPlaying);
+
+      setIsActivelyPracticing(isEngaged);
+
+      if (isEngaged) {
         setStats(prev => {
           const todayStr = getTodayDateString();
           if (prev.todayDate !== todayStr) {
@@ -366,8 +415,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
     }, 1000);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [isMediaPlaying]);
 
   const markPracticeDay = (previous: UserStats): Pick<UserStats, 'streak' | 'lastPracticeDate'> => {
     const today = new Date();
@@ -576,7 +626,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         mascotMood,
         setMascotMood,
         gameplayMood,
-        triggerGameAction
+        triggerGameAction,
+        isActivelyPracticing,
+        reportLearningActivity,
+        setIsMediaPlaying
       }}
     >
       {children}

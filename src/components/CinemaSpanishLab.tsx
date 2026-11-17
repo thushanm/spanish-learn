@@ -42,7 +42,7 @@ const STORAGE_CLIP_INDEX_KEY = 'jtm_cinema_clip_index';
 const STORAGE_SHADOWED_CLIPS_KEY = 'jtm_cinema_shadowed_clips';
 
 export const CinemaSpanishLab: React.FC = () => {
-  const { stats, addXP, setMascotMood, triggerGameAction } = useApp();
+  const { stats, addXP, setMascotMood, triggerGameAction, setIsMediaPlaying, reportLearningActivity } = useApp();
 
   // Selected clip state (persisted in localStorage)
   const [clipIndex, setClipIndex] = useState<number>(() => {
@@ -103,6 +103,17 @@ export const CinemaSpanishLab: React.FC = () => {
       localStorage.setItem(STORAGE_CLIP_INDEX_KEY, clipIndex.toString());
     } catch (e) {}
   }, [clipIndex]);
+
+  // Sync video playing state to AppContext so active study time tracks while watching movie clips
+  useEffect(() => {
+    setIsMediaPlaying(isPlaying);
+    if (isPlaying) {
+      reportLearningActivity('cinema_watching');
+    }
+    return () => {
+      setIsMediaPlaying(false);
+    };
+  }, [isPlaying, setIsMediaPlaying, reportLearningActivity]);
 
   // Load YouTube IFrame API script once
   useEffect(() => {

@@ -38,7 +38,7 @@ const STORAGE_ACTIVE_STORY_KEY = 'jtm_story_active_id';
 const STORAGE_COMPLETED_STORIES_KEY = 'jtm_completed_stories';
 
 export const StoryBookReader: React.FC = () => {
-  const { stats, addXP, setMascotMood, triggerGameAction, addReminderWord, setActiveTab } = useApp();
+  const { stats, addXP, setMascotMood, triggerGameAction, addReminderWord, setActiveTab, reportLearningActivity } = useApp();
 
   // Active Story selection
   const [selectedStoryId, setSelectedStoryId] = useState<string>(() => {
@@ -105,6 +105,20 @@ export const StoryBookReader: React.FC = () => {
       localStorage.setItem(STORAGE_ACTIVE_STORY_KEY, selectedStoryId);
     } catch (e) {}
   }, [selectedStoryId]);
+
+  // Keep study timer active while story narration is playing
+  useEffect(() => {
+    let interval: any;
+    if (isNarrating) {
+      reportLearningActivity('story_narration');
+      interval = setInterval(() => {
+        reportLearningActivity('story_narration');
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isNarrating, reportLearningActivity]);
 
   useEffect(() => {
     setPreferredAccent(currentStory.accent);

@@ -54,7 +54,7 @@ function formatStudyTimeShort(seconds: number): string {
 }
 
 export const RemindersVault: React.FC = () => {
-  const { reminderWords, removeReminderWord, clearReminderWords, stats, addXP } = useApp();
+  const { reminderWords, removeReminderWord, clearReminderWords, stats, addXP, isActivelyPracticing } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [isPlayingAll, setIsPlayingAll] = useState(false);
   const [activePlayingIndex, setActivePlayingIndex] = useState<number | null>(null);
@@ -179,12 +179,19 @@ export const RemindersVault: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black uppercase text-sky-400 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
-                <span>Today's Time</span>
+                <span>Active Time</span>
               </span>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Live
-              </span>
+              {isActivelyPracticing ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Counting
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Paused (Idle)
+                </span>
+              )}
             </div>
             <div className="mt-2 flex items-baseline gap-1.5">
               <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -263,12 +270,12 @@ export const RemindersVault: React.FC = () => {
           </div>
         </div>
 
-        {/* Device Memory Guarantee Bar */}
+        {/* Device Memory & Active Learning Guarantee Bar */}
         <div className="mt-4 p-3 rounded-2xl bg-[#090D16] border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 text-slate-300">
             <HardDrive className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>
-              <strong>Phone Memory Active:</strong> ඔයාගේ කාලය, ලකුණු (XP), ඉගෙනගත් වචන සහ Reminders සියල්ල ඔබගේ phone/laptop මතකයේ (LocalStorage) ස්ථිරවම සුරැකී ඇත. Close කර නැවත ආවත් කිසිවක් මැකෙන්නේ නැත!
+              <strong>Smart Active Time & Phone Memory:</strong> නිකන් App එක open කර තිබීමෙන් කාලය ගණන් නොගනී. ඔබ Stories කියවන විට, Cinema clips නරඹන විට, හෝ වචන හදන / පුහුණු වෙන විට පමණක් සැබෑ කාලය ගණනය වේ! (තත්පර 35ක් idle වුවහොත් timer එක pause වේ). සියලුම දත්ත phone මතකයේ (LocalStorage) ස්ථිරව සුරැකේ.
             </span>
           </div>
 
